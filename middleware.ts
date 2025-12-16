@@ -19,7 +19,9 @@ export async function middleware(req: NextRequest) {
     pathname === "/" ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/products") ||
-    pathname.startsWith("/posts")
+    pathname.startsWith("/posts") ||
+    (pathname.startsWith("/api/posts") && req.method === "GET") ||
+    (pathname.startsWith("/api/tags") && req.method === "GET")
 
   // If user is not signed in and the route is not public, redirect to signin
   if (!user && !isPublic) {

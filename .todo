@@ -1,0 +1,39 @@
+- authentication with google @done
+- logout @done
+- posts
+  - ui @done
+  - api @done
+  - pagiation
+  - filter
+  - search @done
+  - sort
+
+- make the posts to components @done
+- show the post @done
+- list comments @done
+- comment in the post @done
+- edit comment
+- delete comment
+- paginate comment
+- like
+- save
+- share
+- edit post
+- delete post
+- add image feature
+- new post
+- generate a template that i used to use 
+- list saved 
+- edit profile 
+- logout @done
+- change the / home to posts
+- 
+- 
+- admin side being protected
+- list posts
+- show post
+- edit post
+- list reports
+- crud tags
+- list users
+- approve users

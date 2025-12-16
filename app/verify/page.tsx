@@ -97,7 +97,7 @@ function StatusCard({ state }: { state: VerificationState }) {
         </CardContent>
         <CardFooter>
           <Button asChild className="w-full">
-            <Link href="/posts/new">Create a post</Link>
+            <Link href="/posts/upsert">Create a post</Link>
           </Button>
         </CardFooter>
       </Card>

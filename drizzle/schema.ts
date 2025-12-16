@@ -82,6 +82,21 @@ export const posts = pgTable(
   })
 )
 
+/** images */
+export const postImages = pgTable(
+  "post_images",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    postId: uuid("post_id").notNull(),
+    url: text("url").notNull(),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    postIdx: index("post_images_post_idx").on(t.postId),
+  })
+)
+
 /** comments */
 export const comments = pgTable(
   "comments",

@@ -125,7 +125,7 @@ export default async function MyProfilePage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild className="gap-2">
-            <Link href="/posts/new">
+            <Link href="/posts/upsert">
               <Plus className="h-4 w-4" />
               New post
             </Link>
@@ -190,7 +190,7 @@ export default async function MyProfilePage() {
               </CardHeader>
               <CardFooter>
                 <Button asChild>
-                  <Link href="/posts/new">Create post</Link>
+                  <Link href="/posts/upsert">Create post</Link>
                 </Button>
               </CardFooter>
             </Card>
