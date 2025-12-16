@@ -15,9 +15,16 @@ export const createClient = (request: NextRequest) => {
         return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
+        // Keep request cookies up to date
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+
+        // Recreate response (important)
         response = NextResponse.next({ request })
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+
+        // Set cookies on response
+        cookiesToSet.forEach(({ name, value, options }) =>
+          response.cookies.set(name, value, options),
+        )
       },
     },
   })

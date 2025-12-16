@@ -147,7 +147,7 @@ export function Content({ post }: PostFormProps) {
       setSuccessMsg(isEditing ? "Post updated." : "Post created.")
 
       if (!isEditing && json.postId) {
-        router.push(`/posts/${json.postId}`)
+        router.push(`/posts/show/${json.postId}`)
       }
     } catch (err: any) {
       console.error(err)

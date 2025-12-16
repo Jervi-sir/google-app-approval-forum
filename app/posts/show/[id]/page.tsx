@@ -203,8 +203,8 @@ export default function PostDetailPage() {
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">{postError ?? "Unknown error"}</CardContent>
           <CardFooter>
-            <Button asChild variant="outline">
-              <Link href="/posts">Back to posts</Link>
+            <Button asChild variant="outline" onClick={() => window.history.back()}>
+              <Link href="">Back to posts</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -223,8 +223,8 @@ export default function PostDetailPage() {
             This post was hidden by moderation or removed by the author.
           </CardContent>
           <CardFooter>
-            <Button asChild variant="outline">
-              <Link href="/posts">Back to posts</Link>
+            <Button asChild variant="outline" onClick={() => window.history.back()}>
+              <Link href="">Back to posts</Link>
             </Button>
           </CardFooter>
         </Card>
@@ -236,8 +236,8 @@ export default function PostDetailPage() {
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
-        <Button asChild variant="ghost">
-          <Link href="/posts">← Back</Link>
+        <Button asChild variant="ghost" onClick={() => window.history.back()}>
+          <Link href="">← Back</Link>
         </Button>
 
         <div className="flex items-center gap-2">

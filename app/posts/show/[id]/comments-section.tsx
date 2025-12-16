@@ -143,7 +143,7 @@ export function CommentsSection({
     setError(null)
 
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
+      const res = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ authorId: viewerId, content }),
@@ -172,7 +172,7 @@ export function CommentsSection({
     setError(null)
 
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
+      const res = await fetch(`/api/posts/${postId}/comments/${commentId}`, {
         method: "DELETE",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ authorId: viewerId }),

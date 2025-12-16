@@ -17,67 +17,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { ExternalLink, Eye, EyeOff, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react"
+import { ExternalLink, Eye, EyeOff, ShieldAlert, ShieldCheck, Trash2, Loader2 } from "lucide-react"
+import { isUuid } from "@/lib/uuid"
 
 type AdminPostDetail = {
   id: string
   title: string
   content: string
-  playStoreUrl: string
-  googleGroupUrl: string
+  playStoreUrl: string | null
+  googleGroupUrl: string | null
   tags: string[]
   createdAt: string
   updatedAt: string
   moderationStatus: "ok" | "needs_fix" | "hidden"
   isDeleted: boolean
-  moderationNote?: string
-  author: {
-    id: string
-    name: string
-    isVerified?: boolean
-  }
-  counts: {
-    reports: number
-    likes: number
-    saves: number
-    comments: number
-  }
-}
-
-const MOCK: Record<string, AdminPostDetail> = {
-  p_2: {
-    id: "p_2",
-    title: "Expense Splitter App (Alpha)",
-    content:
-      "Need 20 testers to validate multi-currency calculations. Join group then install.\n\nPlease report any rounding issues and screenshots if possible.",
-    playStoreUrl: "https://play.google.com/store/apps/details?id=com.example.split",
-    googleGroupUrl: "https://groups.google.com/g/split-alpha-testers",
-    tags: ["Finance", "Tools"],
-    createdAt: "1d ago",
-    updatedAt: "3h ago",
-    moderationStatus: "needs_fix",
-    isDeleted: false,
-    moderationNote:
-      "Please add clearer steps: Join group → wait 5–10 min → open Play Store link. Also confirm the group link is correct.",
-    author: { id: "u_2", name: "Samir", isVerified: false },
-    counts: { reports: 2, likes: 9, saves: 3, comments: 2 },
-  },
-  p_4: {
-    id: "p_4",
-    title: "FREE APK download (100% legit)",
-    content:
-      "Download the APK from my drive and install. Play Store link not needed. Fast and safe.",
-    playStoreUrl: "https://play.google.com/store/apps/details?id=com.fake",
-    googleGroupUrl: "http://bit.ly/sus-link",
-    tags: ["Tools"],
-    createdAt: "5d ago",
-    updatedAt: "5d ago",
-    moderationStatus: "hidden",
-    isDeleted: false,
-    moderationNote: "Hidden due to multiple malware/spam reports. Investigate user account.",
-    author: { id: "u_4", name: "SpamAccount", isVerified: false },
-    counts: { reports: 7, likes: 0, saves: 0, comments: 1 },
-  },
+  author: { id: string; name: string; isVerified?: boolean }
+  counts: { reports: number; likes: number; saves: number; comments: number }
 }
 
 function StatusBadge({
@@ -98,11 +53,15 @@ function ConfirmDialog({
   description,
   trigger,
   confirmLabel,
+  onConfirm,
+  disabled,
 }: {
   title: string
   description: string
   trigger: React.ReactNode
   confirmLabel: string
+  onConfirm: () => void
+  disabled?: boolean
 }) {
   return (
     <Dialog>
@@ -114,18 +73,35 @@ function ConfirmDialog({
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline">Cancel</Button>
-          <Button>{confirmLabel}</Button>
+          <Button onClick={onConfirm} disabled={disabled}>
+            {disabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {confirmLabel}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-export default function AdminPostDetailPage({ params }: { params: { id: string } }) {
-  const post = MOCK[params.id]
+async function getPost(id: string): Promise<AdminPostDetail | null> {
+  const res = await fetch(`/api/admin/posts/${id}/detail`, {
+    cache: "no-store",
+  }).catch(() => null)
+
+  console.log('ids:', JSON.stringify(res?.body, null, 2));
+  if (!res || !res.ok) return null
+  return (await res.json()) as AdminPostDetail
+}
+
+export default async function AdminPostDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  // server-side guard (equivalent to your UuidSchema.parse)
+  if (!id || !isUuid(id)) notFound()
+
+  const post = await getPost(id)
   if (!post) notFound()
 
-  const suspiciousGroup = post.googleGroupUrl.startsWith("http://")
+  const suspiciousGroup = (post.googleGroupUrl ?? "").startsWith("http://")
   const isNeedsFix = post.moderationStatus === "needs_fix"
   const isHidden = post.moderationStatus === "hidden"
 
@@ -145,17 +121,13 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
             </Link>
           </Button>
 
-          <ConfirmDialog
-            title="Soft delete post?"
-            description="This hides the post from normal users. (UI only)"
-            confirmLabel="Soft delete"
-            trigger={
-              <Button variant="destructive" className="gap-2">
-                <Trash2 className="h-4 w-4" />
-                Delete
-              </Button>
-            }
-          />
+          {/* NOTE: actual action handled client-side (below) */}
+          <Button variant="destructive" asChild className="gap-2">
+            <Link href={`/admin/posts/${post.id}#actions`}>
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Link>
+          </Button>
         </div>
       </div>
 
@@ -168,12 +140,16 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
         </div>
 
         <div className="text-sm text-muted-foreground">
-          <span className="font-mono">{post.id}</span> • Created {post.createdAt} • Updated {post.updatedAt}
+          <span className="font-mono">{post.id}</span> • Created {new Date(post.createdAt).toLocaleString()} • Updated{" "}
+          {new Date(post.updatedAt).toLocaleString()}
         </div>
 
         <div className="text-sm text-muted-foreground">
           Author:{" "}
-          <Link href={`/admin/users/${post.author.id}`} className="font-medium text-foreground hover:underline underline-offset-4">
+          <Link
+            href={`/admin/users/${post.author.id}`}
+            className="font-medium text-foreground hover:underline underline-offset-4"
+          >
             {post.author.name}
           </Link>
         </div>
@@ -188,7 +164,7 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>Needs fix</AlertTitle>
             <AlertDescription>
-              {post.moderationNote ?? "This post requires updates to meet guidelines."}
+              This post requires updates to meet guidelines.
             </AlertDescription>
           </Alert>
         )}
@@ -224,12 +200,12 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Google Group URL</Label>
-                <Input value={post.googleGroupUrl} readOnly />
+                <Input value={post.googleGroupUrl ?? ""} readOnly />
               </div>
 
               <div className="space-y-2">
                 <Label>Play Store URL</Label>
-                <Input value={post.playStoreUrl} readOnly />
+                <Input value={post.playStoreUrl ?? ""} readOnly />
               </div>
 
               <div className="space-y-2">
@@ -247,73 +223,33 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
             </CardContent>
           </Card>
 
+          {/* Keep note UI-only unless you add a table/column */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Moderator note</CardTitle>
               <CardDescription>
-                Add a note to explain why you changed status. (UI only)
+                You don’t have a DB field/table for notes yet — this is UI-only for now.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Textarea
                 placeholder="Example: Please add clearer steps: Join group → wait 5–10 min → open Play Store link."
                 className="min-h-[120px]"
-                defaultValue={post.moderationNote ?? ""}
               />
               <div className="text-xs text-muted-foreground">
-                Keep it actionable. This can be shown to the author.
+                If you want this saved, we’ll add a `post_moderation_notes` table.
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline">Save note</Button>
+              <Button variant="outline" disabled>Save note</Button>
             </CardFooter>
           </Card>
         </div>
 
         {/* Right: Actions + stats */}
+        <ActionsPanel postId={post.id} isDeleted={post.isDeleted} />
+
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Quick actions</CardTitle>
-              <CardDescription>Moderation status changes.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full gap-2">
-                <ShieldCheck className="h-4 w-4" />
-                Mark OK
-              </Button>
-
-              <Button variant="outline" className="w-full gap-2">
-                <ShieldAlert className="h-4 w-4" />
-                Mark Needs Fix
-              </Button>
-
-              <Button variant="outline" className="w-full gap-2">
-                <EyeOff className="h-4 w-4" />
-                Hide post
-              </Button>
-
-              <Button variant="outline" className="w-full gap-2">
-                <Eye className="h-4 w-4" />
-                Restore / Unhide
-              </Button>
-
-              <Separator />
-
-              <ConfirmDialog
-                title="Soft delete post?"
-                description="This will remove it from the feed for normal users."
-                confirmLabel="Soft delete"
-                trigger={
-                  <Button variant="destructive" className="w-full gap-2">
-                    <Trash2 className="h-4 w-4" />
-                    Soft delete
-                  </Button>
-                }
-              />
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Stats</CardTitle>
@@ -345,13 +281,13 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
               <CardDescription>Open externally to verify quickly.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button asChild variant="outline" className="w-full gap-2">
-                <a href={post.googleGroupUrl} target="_blank" rel="noreferrer">
+              <Button asChild variant="outline" className="w-full gap-2" disabled={!post.googleGroupUrl}>
+                <a href={post.googleGroupUrl ?? "#"} target="_blank" rel="noreferrer">
                   Open Google Group <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
-              <Button asChild variant="outline" className="w-full gap-2">
-                <a href={post.playStoreUrl} target="_blank" rel="noreferrer">
+              <Button asChild variant="outline" className="w-full gap-2" disabled={!post.playStoreUrl}>
+                <a href={post.playStoreUrl ?? "#"} target="_blank" rel="noreferrer">
                   Open Play Store <ExternalLink className="h-4 w-4" />
                 </a>
               </Button>
@@ -360,5 +296,15 @@ export default function AdminPostDetailPage({ params }: { params: { id: string }
         </div>
       </div>
     </div>
+  )
+}
+
+// Client action panel (separate file is cleaner, but inline works)
+function ActionsPanel({ postId, isDeleted }: { postId: string; isDeleted: boolean }) {
+  // this is a Server Component file, so we must isolate client logic
+  // eslint-disable-next-line @next/next/no-async-client-component
+  return (
+    // @ts-expect-error Server -> Client boundary
+    <ActionsPanelClient postId={postId} isDeleted={isDeleted} />
   )
 }

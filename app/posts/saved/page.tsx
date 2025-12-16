@@ -149,8 +149,8 @@ export default function SavedPostsPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <Link href="/posts">Back to posts</Link>
+          <Button asChild variant="outline" onClick={() => window.history.back()}>
+            <Link href="">Back to posts</Link>
           </Button>
           <UserNav />
         </div>

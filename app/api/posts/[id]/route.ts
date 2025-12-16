@@ -5,6 +5,8 @@ import { slugifyTag } from "@/lib/slug"
 import { and, eq, inArray, sql } from "drizzle-orm"
 import { db } from "@/drizzle/db"
 import { UuidSchema } from "../../_schema"
+import { createClient } from "@/utils/supabase/server"
+import { cookies } from "next/headers"
 
 const UpdatePostSchema = z.object({
   title: z.string().min(1).max(160).optional(),
@@ -207,3 +209,57 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     return NextResponse.json({ error: err?.message ?? "Server error" }, { status: 500 })
   }
 }
+
+const DeletePostSchema = z.object({
+  authorId: UuidSchema, // the logged-in user id
+})
+
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await ctx.params
+    const postId = UuidSchema.parse(id)
+
+    // ✅ Supabase auth: derive viewerId from session (no body needed)
+    const cookieStore = await cookies() // <-- NOT async
+    const supabase = createClient(cookieStore)
+
+    const { data, error } = await supabase.auth.getUser()
+    if (error || !data?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    const viewerId = data.user.id // UUID from auth.users
+
+    const existing = await db.query.posts.findFirst({
+      where: eq(posts.id, postId),
+      columns: { id: true, authorId: true, isDeleted: true, moderationStatus: true },
+    })
+
+    if (!existing || existing.isDeleted || existing.moderationStatus === "hidden") {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    // ✅ ownership check
+    if (existing.authorId !== viewerId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    await db
+      .update(posts)
+      .set({
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedById: viewerId,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(posts.id, postId), eq(posts.authorId, viewerId)))
+
+    return NextResponse.json({ ok: true })
+  } catch (err: any) {
+    if (err?.name === "ZodError") {
+      return NextResponse.json({ error: "Invalid params", details: err.errors }, { status: 400 })
+    }
+    console.error(err)
+    return NextResponse.json({ error: err?.message ?? "Server error" }, { status: 500 })
+  }
+}
+

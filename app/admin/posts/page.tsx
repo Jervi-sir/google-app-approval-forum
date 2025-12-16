@@ -1,38 +1,29 @@
+"use client"
+
 import Link from "next/link"
+import { useEffect, useMemo, useState, useTransition } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
+  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, ExternalLink, Filter, ShieldAlert, Trash2, EyeOff } from "lucide-react"
+import { ChevronDown, ExternalLink, Filter, ShieldAlert, Trash2, EyeOff, Loader2 } from "lucide-react"
 
 type AdminPostRow = {
   id: string
   title: string
   author: { id: string; name: string; isVerified?: boolean }
-  createdAt: string
+  createdAt: string // ISO from API; we'll format lightly
   tags: string[]
   moderationStatus: "ok" | "needs_fix" | "hidden"
   isDeleted: boolean
@@ -41,56 +32,13 @@ type AdminPostRow = {
   commentsCount: number
 }
 
-const MOCK: AdminPostRow[] = [
-  {
-    id: "p_1",
-    title: "Habit Tracker (Invite-only testing)",
-    author: { id: "u_1", name: "Aimen", isVerified: true },
-    createdAt: "2h ago",
-    tags: ["Productivity", "Health"],
-    moderationStatus: "ok",
-    isDeleted: false,
-    reportsCount: 0,
-    likesCount: 31,
-    commentsCount: 8,
-  },
-  {
-    id: "p_2",
-    title: "Expense Splitter App (Alpha)",
-    author: { id: "u_2", name: "Samir", isVerified: false },
-    createdAt: "1d ago",
-    tags: ["Finance", "Tools"],
-    moderationStatus: "needs_fix",
-    isDeleted: false,
-    reportsCount: 2,
-    likesCount: 9,
-    commentsCount: 2,
-  },
-  {
-    id: "p_4",
-    title: "FREE APK download (100% legit)",
-    author: { id: "u_4", name: "SpamAccount", isVerified: false },
-    createdAt: "5d ago",
-    tags: ["Tools"],
-    moderationStatus: "hidden",
-    isDeleted: false,
-    reportsCount: 7,
-    likesCount: 0,
-    commentsCount: 1,
-  },
-  {
-    id: "p_5",
-    title: "Old test post (ignore)",
-    author: { id: "u_5", name: "DevUser", isVerified: false },
-    createdAt: "2w ago",
-    tags: ["Education"],
-    moderationStatus: "ok",
-    isDeleted: true,
-    reportsCount: 0,
-    likesCount: 1,
-    commentsCount: 0,
-  },
-]
+type ListResp = {
+  items: AdminPostRow[]
+  page: number
+  limit: number
+  total: number
+  hasMore: boolean
+}
 
 function StatusBadge({
   moderationStatus,
@@ -105,8 +53,106 @@ function StatusBadge({
   return <Badge variant="outline">OK</Badge>
 }
 
+function fmtDate(iso: string) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString()
+}
+
 export default function AdminPostsPage() {
-  const rows = MOCK
+  const router = useRouter()
+  const sp = useSearchParams()
+
+  const page = Number(sp.get("page") ?? "1") || 1
+  const limit = Number(sp.get("limit") ?? "20") || 20
+  const status = (sp.get("status") ?? "all") as "all" | "ok" | "needs_fix" | "hidden" | "deleted"
+  const q = sp.get("q") ?? ""
+
+  const [data, setData] = useState<ListResp | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+
+  // local input with debounce -> updates URL (source of truth)
+  const [queryInput, setQueryInput] = useState(q)
+  useEffect(() => setQueryInput(q), [q])
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (queryInput === q) return
+      const next = new URLSearchParams(sp.toString())
+      if (queryInput.trim()) next.set("q", queryInput.trim())
+      else next.delete("q")
+      next.set("page", "1")
+      router.replace(`/admin/posts?${next.toString()}`)
+    }, 350)
+    return () => clearTimeout(t)
+  }, [queryInput, q, sp, router])
+
+  async function load() {
+    setLoading(true)
+    setErr(null)
+    try {
+      const params = new URLSearchParams()
+      params.set("page", String(page))
+      params.set("limit", String(limit))
+      if (q.trim()) params.set("q", q.trim())
+      if (status) params.set("status", status)
+
+      const res = await fetch(`/api/admin/posts?${params.toString()}`, { cache: "no-store" })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        throw new Error(j?.error ?? `Request failed (${res.status})`)
+      }
+      const json = (await res.json()) as ListResp
+      setData(json)
+    } catch (e: any) {
+      setErr(e?.message ?? "Failed to load")
+      setData(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, limit, status, q])
+
+  function setParam(updates: Record<string, string | null>) {
+    const next = new URLSearchParams(sp.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === null) next.delete(k)
+      else next.set(k, v)
+    }
+    router.replace(`/admin/posts?${next.toString()}`)
+  }
+
+  async function act(postId: string, action: string) {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        alert(j?.error ?? "Action failed")
+        return
+      }
+      await load()
+    })
+  }
+
+  const rows = data?.items ?? []
+  const total = data?.total ?? 0
+  const hasMore = data?.hasMore ?? false
+
+  const pageLabel = useMemo(() => {
+    const from = total === 0 ? 0 : (page - 1) * limit + 1
+    const to = Math.min(page * limit, total)
+    return `Showing ${from}-${to} of ${total}`
+  }, [page, limit, total])
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
@@ -115,7 +161,7 @@ export default function AdminPostsPage() {
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight">Admin · Posts</h1>
           <p className="text-sm text-muted-foreground">
-            Moderate posts: hide, mark as needs-fix, or soft-delete. (UI only)
+            Moderate posts: hide, mark as needs-fix, or soft-delete.
           </p>
         </div>
 
@@ -139,7 +185,11 @@ export default function AdminPostsPage() {
             <CardDescription>Find posts by title, author, or id.</CardDescription>
           </CardHeader>
           <CardContent>
-            <Input placeholder="Search… (e.g. 'Expense', 'u_2', 'p_4')" />
+            <Input
+              value={queryInput}
+              onChange={(e) => setQueryInput(e.target.value)}
+              placeholder="Search… (e.g. 'Expense', user id, post id)"
+            />
           </CardContent>
         </Card>
 
@@ -149,19 +199,42 @@ export default function AdminPostsPage() {
             <CardDescription>Status and quick scopes.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button
+              variant={status === "all" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setParam({ status: "all", page: "1" })}
+            >
               <Filter className="h-4 w-4" />
               All
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+
+            <Button
+              variant={status === "needs_fix" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setParam({ status: "needs_fix", page: "1" })}
+            >
               <ShieldAlert className="h-4 w-4" />
               Needs fix
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+
+            <Button
+              variant={status === "hidden" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setParam({ status: "hidden", page: "1" })}
+            >
               <EyeOff className="h-4 w-4" />
               Hidden
             </Button>
-            <Button variant="outline" size="sm" className="gap-2">
+
+            <Button
+              variant={status === "deleted" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setParam({ status: "deleted", page: "1" })}
+            >
               <Trash2 className="h-4 w-4" />
               Deleted
             </Button>
@@ -179,112 +252,170 @@ export default function AdminPostsPage() {
         </CardHeader>
 
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Post</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead className="text-right">Reports</TableHead>
-                <TableHead className="text-right">Likes</TableHead>
-                <TableHead className="text-right">Comments</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+          {err ? (
+            <div className="rounded-md border p-4 text-sm">
+              <div className="font-medium">Failed to load</div>
+              <div className="mt-1 text-muted-foreground">{err}</div>
+            </div>
+          ) : null}
 
-            <TableBody>
-              {rows.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="min-w-[360px]">
-                    <div className="space-y-1">
-                      <div className="font-medium">
-                        <Link
-                          href={`/admin/posts/${p.id}`}
-                          className="hover:underline underline-offset-4"
-                        >
-                          {p.title}
-                        </Link>
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        <span className="font-mono">{p.id}</span> • {p.createdAt}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {p.tags.slice(0, 3).map((t) => (
-                          <Badge key={t} variant="secondary">
-                            {t}
-                          </Badge>
-                        ))}
-                        {p.tags.length > 3 && (
-                          <Badge variant="outline">+{p.tags.length - 3}</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-
-                  <TableCell>
-                    <StatusBadge moderationStatus={p.moderationStatus} isDeleted={p.isDeleted} />
-                  </TableCell>
-
-                  <TableCell className="min-w-[180px]">
-                    <Link
-                      href={`/admin/users/${p.author.id}`}
-                      className="hover:underline underline-offset-4"
-                    >
-                      {p.author.name}
-                    </Link>
-                    {p.author.isVerified && (
-                      <div className="mt-1 text-xs text-muted-foreground">Verified</div>
-                    )}
-                  </TableCell>
-
-                  <TableCell className="text-right">{p.reportsCount}</TableCell>
-                  <TableCell className="text-right">{p.likesCount}</TableCell>
-                  <TableCell className="text-right">{p.commentsCount}</TableCell>
-
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/posts/${p.id}`} className="gap-2">
-                          <ExternalLink className="h-4 w-4" />
-                          Site
-                        </Link>
-                      </Button>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm" className="gap-2">
-                            Actions <ChevronDown className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/posts/${p.id}`}>Open moderation</Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem>Mark OK</DropdownMenuItem>
-                          <DropdownMenuItem>Mark Needs Fix</DropdownMenuItem>
-                          <DropdownMenuItem>Hide</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            Soft delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Post</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Author</TableHead>
+                  <TableHead className="text-right">Reports</TableHead>
+                  <TableHead className="text-right">Likes</TableHead>
+                  <TableHead className="text-right">Comments</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {rows.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="min-w-[360px]">
+                      <div className="space-y-1">
+                        <div className="font-medium">
+                          <Link
+                            href={`/admin/posts/${p.id}`}
+                            className="hover:underline underline-offset-4"
+                          >
+                            {p.title}
+                          </Link>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <span className="font-mono">{p.id}</span> • {fmtDate(p.createdAt)}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {p.tags.slice(0, 3).map((t) => (
+                            <Badge key={t} variant="secondary">
+                              {t}
+                            </Badge>
+                          ))}
+                          {p.tags.length > 3 && (
+                            <Badge variant="outline">+{p.tags.length - 3}</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusBadge moderationStatus={p.moderationStatus} isDeleted={p.isDeleted} />
+                    </TableCell>
+
+                    <TableCell className="min-w-[180px]">
+                      <Link
+                        href={`/admin/users/${p.author.id}`}
+                        className="hover:underline underline-offset-4"
+                      >
+                        {p.author.name}
+                      </Link>
+                      {p.author.isVerified && (
+                        <div className="mt-1 text-xs text-muted-foreground">Verified</div>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-right">{p.reportsCount}</TableCell>
+                    <TableCell className="text-right">{p.likesCount}</TableCell>
+                    <TableCell className="text-right">{p.commentsCount}</TableCell>
+
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" asChild>
+                          <Link href={`/posts/show/${p.id}`} target="_blank" className="gap-2">
+                            <ExternalLink className="h-4 w-4" />
+                            Site
+                          </Link>
+                        </Button>
+
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="gap-2" disabled={pending}>
+                              Actions{" "}
+                              {pending ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/posts/${p.id}`}>Open moderation</Link>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem onClick={() => act(p.id, "mark_ok")}>
+                              Mark OK
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => act(p.id, "mark_needs_fix")}>
+                              Mark Needs Fix
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => act(p.id, "hide")}>
+                              Hide
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator />
+
+                            {!p.isDeleted ? (
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => act(p.id, "soft_delete")}
+                              >
+                                Soft delete
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => act(p.id, "restore")}>
+                                Restore
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {!rows.length ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                      No posts found.
+                    </TableCell>
+                  </TableRow>
+                ) : null}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
 
         <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">Showing {rows.length} posts</div>
+          <div className="text-sm text-muted-foreground">{pageLabel}</div>
+
           <div className="flex items-center gap-2">
-            <Button variant="outline" disabled>
+            <Button
+              variant="outline"
+              disabled={page <= 1 || loading || pending}
+              onClick={() => setParam({ page: String(page - 1) })}
+            >
               Previous
             </Button>
-            <Button variant="outline">Next</Button>
+
+            <Button
+              variant="outline"
+              disabled={!hasMore || loading || pending}
+              onClick={() => setParam({ page: String(page + 1) })}
+            >
+              Next
+            </Button>
           </div>
         </CardFooter>
       </Card>
