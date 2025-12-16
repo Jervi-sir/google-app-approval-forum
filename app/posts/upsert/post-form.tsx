@@ -161,13 +161,13 @@ export function Content({ post }: PostFormProps) {
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <Button asChild variant="ghost">
-          <Link href={backHref}>← Back</Link>
+        <Button asChild variant="ghost" onClick={() => window.history.back()}>
+          <Link href={""}>← Back</Link>
         </Button>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" asChild disabled={isSubmitting}>
-            <Link href={backHref}>Cancel</Link>
+          <Button variant="outline" asChild disabled={isSubmitting} onClick={() => window.history.back()}>
+            <Link href={""}>Cancel</Link>
           </Button>
           <Button className="gap-2" onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? (
@@ -300,8 +300,8 @@ export function Content({ post }: PostFormProps) {
             </div>
 
             <div className="flex w-full gap-2 sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto" asChild disabled={isSubmitting}>
-                <Link href={backHref}>Cancel</Link>
+              <Button variant="outline" className="w-full sm:w-auto" asChild disabled={isSubmitting} onClick={() => window.history.back()}>
+                <Link href={""}>Cancel</Link>
               </Button>
               <Button className="w-full sm:w-auto gap-2" onClick={handleSubmit} disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : isEditing ? <Save className="h-4 w-4" /> : null}

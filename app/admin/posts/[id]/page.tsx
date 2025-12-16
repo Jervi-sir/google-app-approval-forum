@@ -1,5 +1,9 @@
+// app/admin/posts/[id]/page.tsx
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-import { notFound } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,16 +12,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Textarea } from "@/components/ui/textarea"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { ExternalLink, Eye, EyeOff, ShieldAlert, ShieldCheck, Trash2, Loader2 } from "lucide-react"
+import { ExternalLink, EyeOff, ShieldAlert, Trash2, Loader2 } from "lucide-react"
 import { isUuid } from "@/lib/uuid"
 
 type AdminPostDetail = {
@@ -48,58 +43,95 @@ function StatusBadge({
   return <Badge variant="outline">OK</Badge>
 }
 
-function ConfirmDialog({
-  title,
-  description,
-  trigger,
-  confirmLabel,
-  onConfirm,
-  disabled,
-}: {
-  title: string
-  description: string
-  trigger: React.ReactNode
-  confirmLabel: string
-  onConfirm: () => void
-  disabled?: boolean
-}) {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline">Cancel</Button>
-          <Button onClick={onConfirm} disabled={disabled}>
-            {disabled ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {confirmLabel}
+type LoadState =
+  | { kind: "loading" }
+  | { kind: "error"; status?: number; message: string }
+  | { kind: "ready"; post: AdminPostDetail }
+
+export default function AdminPostDetailPage() {
+  const params = useParams<{ id?: string }>()
+  const router = useRouter()
+  const id = (params?.id ?? "") as string
+
+  const [state, setState] = useState<LoadState>({ kind: "loading" })
+
+  const isValidId = useMemo(() => !!id && isUuid(id), [id])
+
+  useEffect(() => {
+    if (!id) return
+    if (!isValidId) {
+      setState({ kind: "error", status: 404, message: "Invalid post id." })
+      return
+    }
+
+    const abort = new AbortController()
+      ; (async () => {
+        setState({ kind: "loading" })
+        try {
+          const res = await fetch(`/api/admin/posts/${id}/detail`, {
+            method: "GET",
+            credentials: "include", // ✅ ensure cookies are sent
+            cache: "no-store",
+            signal: abort.signal,
+          })
+
+          if (!res.ok) {
+            let msg = `Request failed (${res.status})`
+            try {
+              const j = await res.json()
+              msg = j?.error ? String(j.error) : msg
+            } catch { }
+            setState({ kind: "error", status: res.status, message: msg })
+
+            // optional: route unauthorized/forbidden to your pages
+            if (res.status === 401) router.replace("/login")
+            if (res.status === 403) router.replace("/403")
+            return
+          }
+
+          const post = (await res.json()) as AdminPostDetail
+          setState({ kind: "ready", post })
+        } catch (e: any) {
+          if (e?.name === "AbortError") return
+          setState({ kind: "error", message: e?.message ?? "Unknown error" })
+        }
+      })()
+
+    return () => abort.abort()
+  }, [id, isValidId, router])
+
+  if (state.kind === "loading") {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-10">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading post…
+        </div>
+      </div>
+    )
+  }
+
+  if (state.kind === "error") {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-10 space-y-4">
+        <div className="flex items-center justify-between">
+          <Button asChild variant="ghost" onClick={() => window.history.back()}>
+            <Link href="">← Back</Link>
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
+        </div>
 
-async function getPost(id: string): Promise<AdminPostDetail | null> {
-  const res = await fetch(`/api/admin/posts/${id}/detail`, {
-    cache: "no-store",
-  }).catch(() => null)
+        <Alert variant="destructive">
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>
+            {state.message}
+            {state.status ? ` (status: ${state.status})` : null}
+          </AlertDescription>
+        </Alert>
+      </div>
+    )
+  }
 
-  console.log('ids:', JSON.stringify(res?.body, null, 2));
-  if (!res || !res.ok) return null
-  return (await res.json()) as AdminPostDetail
-}
-
-export default async function AdminPostDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  // server-side guard (equivalent to your UuidSchema.parse)
-  if (!id || !isUuid(id)) notFound()
-
-  const post = await getPost(id)
-  if (!post) notFound()
+  const post = state.post
 
   const suspiciousGroup = (post.googleGroupUrl ?? "").startsWith("http://")
   const isNeedsFix = post.moderationStatus === "needs_fix"
@@ -109,8 +141,8 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
     <div className="mx-auto w-full max-w-4xl px-4 py-8">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
-        <Button asChild variant="ghost">
-          <Link href="/admin/posts">← Back</Link>
+        <Button asChild variant="ghost" >
+          <Link href="">← Back</Link>
         </Button>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -121,7 +153,6 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
             </Link>
           </Button>
 
-          {/* NOTE: actual action handled client-side (below) */}
           <Button variant="destructive" asChild className="gap-2">
             <Link href={`/admin/posts/${post.id}#actions`}>
               <Trash2 className="h-4 w-4" />
@@ -140,7 +171,8 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
         </div>
 
         <div className="text-sm text-muted-foreground">
-          <span className="font-mono">{post.id}</span> • Created {new Date(post.createdAt).toLocaleString()} • Updated{" "}
+          <span className="font-mono">{post.id}</span> • Created{" "}
+          {new Date(post.createdAt).toLocaleString()} • Updated{" "}
           {new Date(post.updatedAt).toLocaleString()}
         </div>
 
@@ -163,9 +195,7 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
           <Alert>
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>Needs fix</AlertTitle>
-            <AlertDescription>
-              This post requires updates to meet guidelines.
-            </AlertDescription>
+            <AlertDescription>This post requires updates to meet guidelines.</AlertDescription>
           </Alert>
         )}
 
@@ -182,9 +212,7 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
         {suspiciousGroup && (
           <Alert>
             <AlertTitle>Suspicious link</AlertTitle>
-            <AlertDescription>
-              Google Group URL is not HTTPS. Consider hiding the post.
-            </AlertDescription>
+            <AlertDescription>Google Group URL is not HTTPS. Consider hiding the post.</AlertDescription>
           </Alert>
         )}
       </div>
@@ -223,13 +251,10 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
             </CardContent>
           </Card>
 
-          {/* Keep note UI-only unless you add a table/column */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Moderator note</CardTitle>
-              <CardDescription>
-                You don’t have a DB field/table for notes yet — this is UI-only for now.
-              </CardDescription>
+              <CardDescription>UI-only for now.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Textarea
@@ -237,18 +262,18 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
                 className="min-h-[120px]"
               />
               <div className="text-xs text-muted-foreground">
-                If you want this saved, we’ll add a `post_moderation_notes` table.
+                If you want this saved, add a `post_moderation_notes` table.
               </div>
             </CardContent>
             <CardFooter className="flex justify-end gap-2">
-              <Button variant="outline" disabled>Save note</Button>
+              <Button variant="outline" disabled>
+                Save note
+              </Button>
             </CardFooter>
           </Card>
         </div>
 
-        {/* Right: Actions + stats */}
-        <ActionsPanel postId={post.id} isDeleted={post.isDeleted} />
-
+        {/* Right: stats */}
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
@@ -256,22 +281,17 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
               <CardDescription>Signals and engagement.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border p-3 text-center">
-                <div className="text-xs text-muted-foreground">Reports</div>
-                <div className="text-lg font-semibold">{post.counts.reports}</div>
-              </div>
-              <div className="rounded-md border p-3 text-center">
-                <div className="text-xs text-muted-foreground">Likes</div>
-                <div className="text-lg font-semibold">{post.counts.likes}</div>
-              </div>
-              <div className="rounded-md border p-3 text-center">
-                <div className="text-xs text-muted-foreground">Saves</div>
-                <div className="text-lg font-semibold">{post.counts.saves}</div>
-              </div>
-              <div className="rounded-md border p-3 text-center">
-                <div className="text-xs text-muted-foreground">Comments</div>
-                <div className="text-lg font-semibold">{post.counts.comments}</div>
-              </div>
+              {[
+                ["Reports", post.counts.reports],
+                ["Likes", post.counts.likes],
+                ["Saves", post.counts.saves],
+                ["Comments", post.counts.comments],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="rounded-md border p-3 text-center">
+                  <div className="text-xs text-muted-foreground">{label}</div>
+                  <div className="text-lg font-semibold">{value as any}</div>
+                </div>
+              ))}
             </CardContent>
           </Card>
 
@@ -293,18 +313,10 @@ export default async function AdminPostDetailPage({ params }: { params: Promise<
               </Button>
             </CardContent>
           </Card>
+
+          <div id="actions" />
         </div>
       </div>
     </div>
-  )
-}
-
-// Client action panel (separate file is cleaner, but inline works)
-function ActionsPanel({ postId, isDeleted }: { postId: string; isDeleted: boolean }) {
-  // this is a Server Component file, so we must isolate client logic
-  // eslint-disable-next-line @next/next/no-async-client-component
-  return (
-    // @ts-expect-error Server -> Client boundary
-    <ActionsPanelClient postId={postId} isDeleted={isDeleted} />
   )
 }
