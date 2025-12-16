@@ -146,7 +146,7 @@ export default function AdminUserDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-8">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading…
@@ -157,7 +157,7 @@ export default function AdminUserDetailPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10 space-y-4">
+      <div className="mx-auto w-full max-w-5xl px-4 pb-8 space-y-4">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>
           <Link href="">← Back</Link>
         </Button>

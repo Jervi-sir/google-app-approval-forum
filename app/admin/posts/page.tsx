@@ -155,270 +155,269 @@ export default function AdminPostsPage() {
   }, [page, limit, total])
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight">Admin · Posts</h1>
-          <p className="text-sm text-muted-foreground">
-            Moderate posts: hide, mark as needs-fix, or soft-delete.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/admin/reports">Reports</Link>
-          </Button>
-          <Button asChild>
-            <Link href="/posts">View site</Link>
-          </Button>
-        </div>
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* Filters */}
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="sm:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Search</CardTitle>
-            <CardDescription>Find posts by title, author, or id.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Input
-              value={queryInput}
-              onChange={(e) => setQueryInput(e.target.value)}
-              placeholder="Search… (e.g. 'Expense', user id, post id)"
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base">Filters</CardTitle>
-            <CardDescription>Status and quick scopes.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button
-              variant={status === "all" ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-              onClick={() => setParam({ status: "all", page: "1" })}
-            >
-              <Filter className="h-4 w-4" />
-              All
-            </Button>
-
-            <Button
-              variant={status === "needs_fix" ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-              onClick={() => setParam({ status: "needs_fix", page: "1" })}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Needs fix
-            </Button>
-
-            <Button
-              variant={status === "hidden" ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-              onClick={() => setParam({ status: "hidden", page: "1" })}
-            >
-              <EyeOff className="h-4 w-4" />
-              Hidden
-            </Button>
-
-            <Button
-              variant={status === "deleted" ? "default" : "outline"}
-              size="sm"
-              className="gap-2"
-              onClick={() => setParam({ status: "deleted", page: "1" })}
-            >
-              <Trash2 className="h-4 w-4" />
-              Deleted
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Separator className="my-6" />
-
-      {/* Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Posts</CardTitle>
-          <CardDescription>Manage content visibility and quality.</CardDescription>
-        </CardHeader>
-
-        <CardContent className="overflow-x-auto">
-          {err ? (
-            <div className="rounded-md border p-4 text-sm">
-              <div className="font-medium">Failed to load</div>
-              <div className="mt-1 text-muted-foreground">{err}</div>
-            </div>
-          ) : null}
-
-          {loading ? (
-            <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Post</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Author</TableHead>
-                  <TableHead className="text-right">Reports</TableHead>
-                  <TableHead className="text-right">Likes</TableHead>
-                  <TableHead className="text-right">Comments</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {rows.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="min-w-[360px]">
-                      <div className="space-y-1">
-                        <div className="font-medium">
-                          <Link
-                            href={`/admin/posts/${p.id}`}
-                            className="hover:underline underline-offset-4"
-                          >
-                            {p.title}
-                          </Link>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          <span className="font-mono">{p.id}</span> • {fmtDate(p.createdAt)}
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                          {p.tags.slice(0, 3).map((t) => (
-                            <Badge key={t} variant="secondary">
-                              {t}
-                            </Badge>
-                          ))}
-                          {p.tags.length > 3 && (
-                            <Badge variant="outline">+{p.tags.length - 3}</Badge>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <StatusBadge moderationStatus={p.moderationStatus} isDeleted={p.isDeleted} />
-                    </TableCell>
-
-                    <TableCell className="min-w-[180px]">
-                      <Link
-                        href={`/admin/users/${p.author.id}`}
-                        className="hover:underline underline-offset-4"
-                      >
-                        {p.author.name}
-                      </Link>
-                      {p.author.isVerified && (
-                        <div className="mt-1 text-xs text-muted-foreground">Verified</div>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right">{p.reportsCount}</TableCell>
-                    <TableCell className="text-right">{p.likesCount}</TableCell>
-                    <TableCell className="text-right">{p.commentsCount}</TableCell>
-
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <Link href={`/posts/show/${p.id}`} target="_blank" className="gap-2">
-                            <ExternalLink className="h-4 w-4" />
-                            Site
-                          </Link>
-                        </Button>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="gap-2" disabled={pending}>
-                              Actions{" "}
-                              {pending ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/posts/${p.id}`}>Open moderation</Link>
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator />
-
-                            <DropdownMenuItem onClick={() => act(p.id, "mark_ok")}>
-                              Mark OK
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => act(p.id, "mark_needs_fix")}>
-                              Mark Needs Fix
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => act(p.id, "hide")}>
-                              Hide
-                            </DropdownMenuItem>
-
-                            <DropdownMenuSeparator />
-
-                            {!p.isDeleted ? (
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => act(p.id, "soft_delete")}
-                              >
-                                Soft delete
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem onClick={() => act(p.id, "restore")}>
-                                Restore
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-
-                {!rows.length ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
-                      No posts found.
-                    </TableCell>
-                  </TableRow>
-                ) : null}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-
-        <CardFooter className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">{pageLabel}</div>
+    <>
+      <div className="mx-auto w-full max-w-5xl px-4 pb-8">
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold tracking-tight">Admin · Posts</h1>
+            <p className="text-sm text-muted-foreground">
+              Moderate posts: hide, mark as needs-fix, or soft-delete.
+            </p>
+          </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              disabled={page <= 1 || loading || pending}
-              onClick={() => setParam({ page: String(page - 1) })}
-            >
-              Previous
+            <Button variant="outline" asChild>
+              <Link href="/admin/reports">Reports</Link>
             </Button>
-
-            <Button
-              variant="outline"
-              disabled={!hasMore || loading || pending}
-              onClick={() => setParam({ page: String(page + 1) })}
-            >
-              Next
+            <Button asChild>
+              <Link href="/posts">View site</Link>
             </Button>
           </div>
-        </CardFooter>
-      </Card>
-    </div>
+        </div>
+
+        <Separator className="my-6" />
+
+        {/* Filters */}
+        <div className="grid gap-3 sm:grid-cols-3">
+          <Card className="sm:col-span-2">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Search</CardTitle>
+              <CardDescription>Find posts by title, author, or id.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Input
+                value={queryInput}
+                onChange={(e) => setQueryInput(e.target.value)}
+                placeholder="Search… (e.g. 'Expense', user id, post id)"
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Filters</CardTitle>
+              <CardDescription>Status and quick scopes.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button
+                variant={status === "all" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setParam({ status: "all", page: "1" })}
+              >
+                <Filter className="h-4 w-4" />
+                All
+              </Button>
+
+              <Button
+                variant={status === "needs_fix" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setParam({ status: "needs_fix", page: "1" })}
+              >
+                <ShieldAlert className="h-4 w-4" />
+                Needs fix
+              </Button>
+
+              {/* <Button
+                variant={status === "hidden" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setParam({ status: "hidden", page: "1" })}
+              >
+                <EyeOff className="h-4 w-4" />
+                Hidden
+              </Button> */}
+
+              <Button
+                variant={status === "deleted" ? "default" : "outline"}
+                size="sm"
+                className="gap-2"
+                onClick={() => setParam({ status: "deleted", page: "1" })}
+              >
+                <Trash2 className="h-4 w-4" />
+                Deleted
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Separator className="my-6" />
+
+        {/* Table */}
+        <Card>
+          <CardContent className="overflow-x-auto">
+            {err ? (
+              <div className="rounded-md border p-4 text-sm">
+                <div className="font-medium">Failed to load</div>
+                <div className="mt-1 text-muted-foreground">{err}</div>
+              </div>
+            ) : null}
+
+            {loading ? (
+              <div className="flex items-center gap-2 py-10 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Post</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Author</TableHead>
+                    <TableHead className="text-right">Reports</TableHead>
+                    <TableHead className="text-right">Likes</TableHead>
+                    <TableHead className="text-right">Comments</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+
+                <TableBody>
+                  {rows.map((p) => (
+                    <TableRow key={p.id}>
+                      <TableCell className="min-w-[360px]">
+                        <div className="space-y-1">
+                          <div className="font-medium">
+                            <Link
+                              href={`/admin/posts/${p.id}`}
+                              className="hover:underline underline-offset-4"
+                            >
+                              {p.title}
+                            </Link>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-mono">{p.id}</span>
+                            <br />
+                            <span>{fmtDate(p.createdAt)}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {p.tags.slice(0, 3).map((t) => (
+                              <Badge key={t} variant="secondary">
+                                {t}
+                              </Badge>
+                            ))}
+                            {p.tags.length > 3 && (
+                              <Badge variant="outline">+{p.tags.length - 3}</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell>
+                        <StatusBadge moderationStatus={p.moderationStatus} isDeleted={p.isDeleted} />
+                      </TableCell>
+
+                      <TableCell className="min-w-[80px]">
+                        <Link
+                          href={`/admin/users/${p.author.id}`}
+                          className="hover:underline underline-offset-4"
+                        >
+                          {p.author.name}
+                        </Link>
+                        {p.author.isVerified && (
+                          <div className="mt-1 text-xs text-muted-foreground">Verified</div>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-right">{p.reportsCount}</TableCell>
+                      <TableCell className="text-right">{p.likesCount}</TableCell>
+                      <TableCell className="text-right">{p.commentsCount}</TableCell>
+
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/posts/show/${p.id}`} target="_blank" className="gap-2">
+                              <ExternalLink className="h-4 w-4" />
+                              Site
+                            </Link>
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="gap-2" disabled={pending}>
+                                Actions{" "}
+                                {pending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/admin/posts/${p.id}`}>Open moderation</Link>
+                              </DropdownMenuItem>
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem onClick={() => act(p.id, "mark_ok")}>
+                                Mark OK
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => act(p.id, "mark_needs_fix")}>
+                                Mark Needs Fix
+                              </DropdownMenuItem>
+                              {/* <DropdownMenuItem onClick={() => act(p.id, "hide")}>
+                                Hide
+                              </DropdownMenuItem> */}
+
+                              <DropdownMenuSeparator />
+
+                              {!p.isDeleted ? (
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={() => act(p.id, "soft_delete")}
+                                >
+                                  Soft delete
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={() => act(p.id, "restore")}>
+                                  Restore
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {!rows.length ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="py-10 text-center text-sm text-muted-foreground">
+                        No posts found.
+                      </TableCell>
+                    </TableRow>
+                  ) : null}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+
+          <CardFooter className="flex items-center justify-between">
+            <div className="text-sm text-muted-foreground">{pageLabel}</div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                disabled={page <= 1 || loading || pending}
+                onClick={() => setParam({ page: String(page - 1) })}
+              >
+                Previous
+              </Button>
+
+              <Button
+                variant="outline"
+                disabled={!hasMore || loading || pending}
+                onClick={() => setParam({ page: String(page + 1) })}
+              >
+                Next
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      </div>
+    </>
   )
 }
