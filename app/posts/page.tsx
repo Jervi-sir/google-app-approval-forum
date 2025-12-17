@@ -268,7 +268,10 @@ export default async function PostsPage({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2" aria-label="Tags">
+        <div
+          className="flex gap-2 overflow-x-auto whitespace-nowrap pb-2 no-scrollbar overscroll-x-contain"
+          aria-label="Tags"
+        >
           <Button asChild variant={tag ? "outline" : "secondary"} size="sm" className="rounded-full">
             <Link href={`/posts${buildQS({ q, verified, sort, page: "1" })}`}>All</Link>
           </Button>
@@ -300,7 +303,7 @@ export default async function PostsPage({
         </div>
       </section>
 
-      <Separator className="my-6" />
+      <Separator className="mb-5 mt-4" />
 
       {/* Feed */}
       <section aria-label="Posts feed" className="space-y-4">

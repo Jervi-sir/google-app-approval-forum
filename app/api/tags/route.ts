@@ -21,9 +21,10 @@ export async function GET(req: Request) {
 
     const whereParts = []
 
-    if (activeFilter !== null) {
-      whereParts.push(eq(tags.isActive, activeFilter))
-    }
+    // if (activeFilter !== null) {
+    //   whereParts.push(eq(tags.isActive, activeFilter))
+    // }
+    whereParts.push(eq(tags.isActive, true))
 
     if (q) {
       whereParts.push(ilike(tags.name, `%${q}%`))
@@ -76,7 +77,7 @@ export async function POST(req: Request) {
     // insert new tag
     const inserted = await db
       .insert(tags)
-      .values({ name, slug })
+      .values({ name, slug, isActive: true })
       .returning({ id: tags.id, name: tags.name, slug: tags.slug })
 
     return NextResponse.json({ ok: true, tag: inserted[0] })

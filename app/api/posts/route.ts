@@ -77,6 +77,7 @@ export async function POST(req: Request) {
             toInsert.map((t) => ({
               name: t.name,
               slug: t.slug,
+              isActive: true, // Auto-activate tags created via posts
             }))
           )
         }

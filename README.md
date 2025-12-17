@@ -1,4 +1,10 @@
+### supabase oauth url redirect
 
+Go to Supabase. Navigate to Authentication > URL Configuration
+Put the real url
+
+
+### supabase storage policies
 
 create policy "public can read google_play"
 on storage.objects
