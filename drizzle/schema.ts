@@ -127,6 +127,7 @@ export const tags = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     name: varchar("name", { length: 48 }).notNull(),
     slug: varchar("slug", { length: 64 }).notNull(),
+    isActive: boolean("is_active").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({

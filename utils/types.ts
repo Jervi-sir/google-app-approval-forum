@@ -20,4 +20,6 @@ export type FeedPost = {
   }
   moderationStatus?: "ok" | "needs_fix" | "hidden"
   savedAt: string
+  savedByMe?: boolean
+  likedByMe?: boolean
 }

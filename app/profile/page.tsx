@@ -26,7 +26,10 @@ import {
   MessageSquare,
   Heart,
   RefreshCcw,
+  PodcastIcon,
 } from "lucide-react"
+import { FeedPost } from "@/utils/types"
+import { PostCard } from "@/components/post-card"
 
 type MyUser = {
   id: string
@@ -36,16 +39,6 @@ type MyUser = {
   role: "user" | "moderator" | "admin"
   isVerified: boolean
   joinedAt: string
-}
-
-type MyPost = {
-  id: string
-  title: string
-  excerpt: string
-  createdAt: string
-  tags: string[]
-  moderationStatus: "ok" | "needs_fix" | "hidden"
-  counts: { likes: number; comments: number; saves: number }
 }
 
 type MyCommentRow = {
@@ -60,7 +53,7 @@ type SavedLikedRow = {
   postId: string
   savedAt?: string
   likedAt?: string
-  post: { id: string; title: string; createdAt: string } | null
+  post: FeedPost | null
 }
 
 type TabKey = "posts" | "comments" | "saved" | "liked" | "settings"
@@ -105,7 +98,7 @@ export default function MyProfilePage() {
   const [meErr, setMeErr] = useState<string | null>(null)
 
   // --- POSTS ---
-  const [posts, setPosts] = useState<MyPost[]>([])
+  const [posts, setPosts] = useState<FeedPost[]>([])
   const [loadingPosts, setLoadingPosts] = useState(false)
   const [postsErr, setPostsErr] = useState<string | null>(null)
 
@@ -134,7 +127,7 @@ export default function MyProfilePage() {
       setPostsErr(null)
       setLoadingPosts(true)
 
-      const r = await fetchJson<{ items: MyPost[] }>("/api/me/posts")
+      const r = await fetchJson<{ items: FeedPost[] }>("/api/me/posts")
       if (!r.ok) {
         setPostsErr(r.error)
         setPosts([])
@@ -263,7 +256,7 @@ export default function MyProfilePage() {
 
   if (loadingMe) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading profile…
@@ -274,7 +267,7 @@ export default function MyProfilePage() {
 
   if (!me) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <Card className="border-destructive/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-destructive">Couldn’t load profile</CardTitle>
@@ -291,7 +284,7 @@ export default function MyProfilePage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
@@ -326,9 +319,9 @@ export default function MyProfilePage() {
           </Button>
 
           <Button variant="outline" asChild className="gap-2">
-            <Link href="/verify">
-              <ShieldCheck className="h-4 w-4" />
-              Verification
+            <Link href="/posts">
+              <PodcastIcon className="h-4 w-4" />
+              Home
             </Link>
           </Button>
 
@@ -344,12 +337,12 @@ export default function MyProfilePage() {
       <Separator className="my-6" />
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="w-full">
-        <TabsList className="grid w-full grid-cols-5 sm:w-[720px]">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="posts">Posts</TabsTrigger>
           <TabsTrigger value="comments">Comments</TabsTrigger>
           <TabsTrigger value="saved">Saved</TabsTrigger>
           <TabsTrigger value="liked">Liked</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
+          {/* <TabsTrigger value="settings">Settings</TabsTrigger> */}
         </TabsList>
 
         {/* POSTS */}
@@ -392,7 +385,7 @@ export default function MyProfilePage() {
                 </Button>
               </CardFooter>
             </Card>
-          ) : posts.length === 0 ? (
+          ) : posts?.length === 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">No posts yet</CardTitle>
@@ -405,58 +398,8 @@ export default function MyProfilePage() {
               </CardFooter>
             </Card>
           ) : (
-            posts.map((p) => (
-              <Card key={p.id}>
-                <CardHeader className="space-y-2">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <CardTitle className="text-lg">
-                        <Link href={`/posts/${p.id}`} className="hover:underline underline-offset-4">
-                          {p.title}
-                        </Link>
-                      </CardTitle>
-
-                      <CardDescription className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs text-muted-foreground">• {new Date(p.createdAt).toLocaleString()}</span>
-                        {p.moderationStatus === "needs_fix" && <Badge variant="destructive">Needs fix</Badge>}
-                        {p.moderationStatus === "hidden" && <Badge variant="secondary">Hidden</Badge>}
-                      </CardDescription>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button variant="outline" size="sm" asChild>
-                        <Link href={`/posts/edit/${p.id}`}>Edit</Link>
-                      </Button>
-                      <Button size="sm" asChild>
-                        <Link href={`/posts/${p.id}`}>Open</Link>
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {p.tags.map((t) => (
-                      <Badge key={t} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-foreground/90">{p.excerpt}</p>
-                </CardContent>
-
-                <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20">
-                  <div className="text-sm text-muted-foreground">
-                    ❤️ {p.counts.likes} · 💬 {p.counts.comments} · 🔖 {p.counts.saves}
-                  </div>
-                  <Button variant="ghost" size="sm" asChild className="gap-2">
-                    <Link href={`/posts/${p.id}`}>
-                      View <ExternalLink className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
+            posts?.map((p) => (
+              <PostCard key={p.id} post={p} />
             ))
           )}
         </TabsContent>
@@ -507,12 +450,17 @@ export default function MyProfilePage() {
             <div className="space-y-3">
               {comments.map((c) => (
                 <Card key={c.id}>
-                  <CardHeader className="pb-3">
+                  <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      <Link href={`/posts/${c.postId}`} className="hover:underline underline-offset-4">
+                      <Link href={`/posts/show/${c.postId}`} className="hover:underline underline-offset-4">
                         {c.postTitle}
                       </Link>
+                      <div className="ml-auto">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/posts/show/${c.postId}`} target="_blank">Open post</Link>
+                        </Button>
+                      </div>
                     </CardTitle>
                     <CardDescription>{new Date(c.createdAt).toLocaleString()}</CardDescription>
                   </CardHeader>
@@ -520,12 +468,6 @@ export default function MyProfilePage() {
                   <CardContent>
                     <div className="text-sm text-foreground/90 whitespace-pre-wrap">{c.content}</div>
                   </CardContent>
-
-                  <CardFooter className="border-t bg-muted/20">
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/posts/${c.postId}`}>Open post</Link>
-                    </Button>
-                  </CardFooter>
                 </Card>
               ))}
             </div>
@@ -546,52 +488,40 @@ export default function MyProfilePage() {
             </Button>
           </div>
 
-          <Card>
-            <CardContent className="pt-6 overflow-x-auto">
-              {loadingSaved ? (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading…
-                </div>
-              ) : savedErr ? (
-                <div className="space-y-2">
-                  <div className="text-sm text-destructive">{savedErr}</div>
-                  <Button variant="outline" size="sm" onClick={() => loadSaved({ force: true })}>
-                    Retry
-                  </Button>
-                </div>
-              ) : saved.length === 0 ? (
-                <div className="text-sm text-muted-foreground">Nothing saved yet.</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[70%]">Post</TableHead>
-                      <TableHead className="text-right">Saved</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {saved.map((r) => (
-                      <TableRow key={r.postId}>
-                        <TableCell className="min-w-[340px]">
-                          {r.post ? (
-                            <Link href={`/posts/${r.post.id}`} className="inline-flex items-center gap-2 hover:underline underline-offset-4">
-                              <Bookmark className="h-4 w-4" />
-                              {r.post.title}
-                            </Link>
-                          ) : (
-                            <span className="text-muted-foreground">Post deleted</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right text-sm text-muted-foreground">
-                          {r.savedAt ? new Date(r.savedAt).toLocaleString() : "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+          {loadingSaved ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+              <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            </div>
+          ) : savedErr ? (
+            <div className="space-y-2">
+              <div className="text-sm text-destructive">{savedErr}</div>
+              <Button variant="outline" size="sm" onClick={() => loadSaved({ force: true })}>
+                Retry
+              </Button>
+            </div>
+          ) : saved?.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Nothing saved yet.</div>
+          ) : (
+            <div className="space-y-4">
+              {saved.map((r) =>
+                r.post ? (
+                  <div key={r.postId} className="space-y-2">
+                    <div className="text-xs text-muted-foreground">
+                      Saved {r.savedAt ? new Date(r.savedAt).toLocaleString() : "—"}
+                    </div>
+                    <PostCard post={r.post} />
+                  </div>
+                ) : (
+                  <Card key={r.postId}>
+                    <CardHeader>
+                      <CardTitle className="text-base">Post deleted</CardTitle>
+                      <CardDescription>This saved post no longer exists.</CardDescription>
+                    </CardHeader>
+                  </Card>
+                ),
               )}
-            </CardContent>
-          </Card>
+            </div>
+          )}
         </TabsContent>
 
         {/* LIKED */}
@@ -609,7 +539,7 @@ export default function MyProfilePage() {
           </div>
 
           <Card>
-            <CardContent className="pt-6 overflow-x-auto">
+            <CardContent className="overflow-x-auto">
               {loadingLiked ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading…
@@ -636,7 +566,7 @@ export default function MyProfilePage() {
                       <TableRow key={r.postId}>
                         <TableCell className="min-w-[340px]">
                           {r.post ? (
-                            <Link href={`/posts/${r.post.id}`} className="inline-flex items-center gap-2 hover:underline underline-offset-4">
+                            <Link href={`/posts/show/${r.post.id}`} target="_blank" className="inline-flex items-center gap-2 hover:underline underline-offset-4">
                               <Heart className="h-4 w-4" />
                               {r.post.title}
                             </Link>

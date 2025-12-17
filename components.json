@@ -1,6 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema.json",
-  "style": "new-york",
+  "style": "radix-lyra",
   "rsc": true,
   "tsx": true,
   "tailwind": {
@@ -18,5 +18,9 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@8bitcn": "https://8bitcn.com/r/{name}.json",
+    "@optics": "https://optics.agusmayol.com.ar/r/{name}.json",
+    "@retroui": "https://retroui.dev/r/{name}.json"
+  }
 }

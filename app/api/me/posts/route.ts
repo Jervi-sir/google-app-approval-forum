@@ -1,7 +1,8 @@
+// app/api/me/posts/route.ts
 import { NextResponse } from "next/server"
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { desc, eq, sql } from "drizzle-orm"
 import { db } from "@/drizzle/db"
-import { posts, postLikes, postSaves, comments, postTags, tags } from "@/drizzle/schema"
+import { posts, postLikes, postSaves, comments, postTags, tags, profiles } from "@/drizzle/schema"
 
 import { cookies } from "next/headers"
 import { createClient } from "@/utils/supabase/server"
@@ -13,53 +14,82 @@ export async function GET() {
 
   const userId = auth.user.id
 
+  // counts subqueries (same idea as /api/posts)
+  const likesCount = sql<number>`(
+    select count(*)::int from ${postLikes} pl where pl.post_id = ${posts.id}
+  )`
+  const savesCount = sql<number>`(
+    select count(*)::int from ${postSaves} ps where ps.post_id = ${posts.id}
+  )`
+  const commentsCount = sql<number>`(
+    select count(*)::int from ${comments} c
+    where c.post_id = ${posts.id} and c.is_deleted = false
+  )`
+
+  // tags aggregation (works with left joins + groupBy)
+  const tagsAgg = sql<string[]>`
+    coalesce(
+      array_agg(distinct ${tags.name})
+        filter (where ${tags.name} is not null),
+      '{}'
+    )
+  `
+
   const rows = await db
     .select({
       id: posts.id,
       title: posts.title,
       content: posts.content,
-      moderationStatus: posts.moderationStatus,
+      playStoreUrl: posts.playStoreUrl,
+      googleGroupUrl: posts.googleGroupUrl,
       createdAt: posts.createdAt,
+      moderationStatus: posts.moderationStatus,
 
-      likes: sql<number>`coalesce(count(distinct ${postLikes.userId}), 0)`.mapWith(Number),
-      saves: sql<number>`coalesce(count(distinct ${postSaves.userId}), 0)`.mapWith(Number),
-      commentsCount: sql<number>`coalesce(count(distinct ${comments.id}), 0)`.mapWith(Number),
+      // ✅ author fields (needed for PostCard)
+      authorId: profiles.id,
+      authorName: profiles.name,
+      authorAvatar: profiles.avatarUrl,
+      authorIsVerified: profiles.isVerified,
+
+      // ✅ counts
+      likes: likesCount,
+      saves: savesCount,
+      comments: commentsCount,
+
+      // ✅ tags
+      tags: tagsAgg,
     })
     .from(posts)
-    .leftJoin(postLikes, eq(postLikes.postId, posts.id))
-    .leftJoin(postSaves, eq(postSaves.postId, posts.id))
-    .leftJoin(comments, eq(comments.postId, posts.id))
+    .innerJoin(profiles, eq(profiles.id, posts.authorId)) // ✅ important
+    .leftJoin(postTags, eq(postTags.postId, posts.id))
+    .leftJoin(tags, eq(tags.id, postTags.tagId))
     .where(eq(posts.authorId, userId))
-    .groupBy(posts.id)
+    .groupBy(posts.id, profiles.id) // ✅ must include profiles.id
     .orderBy(desc(posts.createdAt))
     .limit(30)
 
-  const ids = rows.map((r) => r.id)
+  const data = rows.map((p) => ({
+    id: p.id,
+    title: p.title,
+    content: p.content,
+    playStoreUrl: p.playStoreUrl ?? "",
+    googleGroupUrl: p.googleGroupUrl ?? "",
+    createdAt: p.createdAt?.toISOString?.() ?? String(p.createdAt),
+    tags: p.tags ?? [],
+    moderationStatus: p.moderationStatus as any,
+    author: {
+      id: p.authorId,
+      name: p.authorName ?? "Unknown",
+      image: p.authorAvatar ?? undefined,
+      isVerified: !!p.authorIsVerified,
+    },
+    counts: {
+      likes: Number(p.likes ?? 0),
+      comments: Number(p.comments ?? 0),
+      saves: Number(p.saves ?? 0),
+    },
+  }))
 
-  const tagRows = ids.length
-    ? await db
-      .select({ postId: postTags.postId, tag: tags.name })
-      .from(postTags)
-      .innerJoin(tags, eq(tags.id, postTags.tagId))
-      .where(inArray(postTags.postId, ids))
-    : []
-
-  const tagsByPost = new Map<string, string[]>()
-  for (const tr of tagRows) {
-    const arr = tagsByPost.get(tr.postId) ?? []
-    arr.push(tr.tag)
-    tagsByPost.set(tr.postId, arr)
-  }
-
-  return NextResponse.json({
-    items: rows.map((p) => ({
-      id: p.id,
-      title: p.title,
-      excerpt: (p.content ?? "").replace(/\s+/g, " ").trim().slice(0, 220) + ((p.content ?? "").length > 220 ? "…" : ""),
-      createdAt: p.createdAt,
-      tags: tagsByPost.get(p.id) ?? [],
-      moderationStatus: p.moderationStatus,
-      counts: { likes: p.likes, comments: p.commentsCount, saves: p.saves },
-    })),
-  })
+  // ✅ same “shape” idea as /api/posts (you can keep items if you want, but PostCard cares about post shape)
+  return NextResponse.json({ ok: true, items: data })
 }

@@ -1,30 +1,39 @@
+// utils/supabase/middleware.ts
 import { createServerClient } from "@supabase/ssr"
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! // <-- IMPORTANT
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const createClient = (request: NextRequest) => {
+export function createClient(request: NextRequest) {
   let response = NextResponse.next({
-    request: { headers: request.headers },
+    request: {
+      headers: request.headers, // IMPORTANT
+    },
   })
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll()
       },
       setAll(cookiesToSet) {
-        // Keep request cookies up to date
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        // set on the request (so subsequent reads in this middleware see latest cookies)
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value)
+        }
 
-        // Recreate response (important)
-        response = NextResponse.next({ request })
+        // recreate response with headers (IMPORTANT)
+        response = NextResponse.next({
+          request: {
+            headers: request.headers,
+          },
+        })
 
-        // Set cookies on response
-        cookiesToSet.forEach(({ name, value, options }) =>
-          response.cookies.set(name, value, options),
-        )
+        // set cookies on response
+        for (const { name, value, options } of cookiesToSet) {
+          response.cookies.set(name, value, options)
+        }
       },
     },
   })

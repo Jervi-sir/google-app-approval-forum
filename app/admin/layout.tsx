@@ -4,8 +4,10 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AppSidebar } from "./layouts/app-sidebar"
+import { requireAdmin } from "@/utils/guards"
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await requireAdmin()
   return (
     <SidebarProvider>
       <AppSidebar />

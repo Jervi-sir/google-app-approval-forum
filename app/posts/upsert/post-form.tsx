@@ -5,7 +5,7 @@ import React, { useState } from "react"
 import { Plus, Save, Loader2, Info } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,7 +45,7 @@ export function PostForm({ post }: PostFormProps) {
 }
 
 export function Content({ post }: PostFormProps) {
-  const { userName, authorId } = useAuthUser()
+  const { userName, authorId, isAuthed, loading } = useAuthUser()
   const router = useRouter()
 
   const isEditing = !!post?.id
@@ -158,7 +158,7 @@ export function Content({ post }: PostFormProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>
@@ -201,9 +201,7 @@ export function Content({ post }: PostFormProps) {
         </p>
       </div>
 
-      <Separator className="my-6" />
-
-      <div className="space-y-6">
+      <div className="space-y-6 mt-6">
         {/* Error / Success */}
         {errorMsg && (
           <Alert variant="destructive">

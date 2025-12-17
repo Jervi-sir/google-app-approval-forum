@@ -16,6 +16,14 @@ CREATE TABLE "comments" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "post_images" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"post_id" uuid NOT NULL,
+	"url" text NOT NULL,
+	"position" integer DEFAULT 0 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "post_likes" (
 	"post_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
@@ -84,6 +92,7 @@ CREATE TABLE "tags" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(48) NOT NULL,
 	"slug" varchar(64) NOT NULL,
+	"is_active" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -101,6 +110,7 @@ CREATE TABLE "verification_requests" (
 --> statement-breakpoint
 CREATE INDEX "comments_post_idx" ON "comments" USING btree ("post_id");--> statement-breakpoint
 CREATE INDEX "comments_author_idx" ON "comments" USING btree ("author_id");--> statement-breakpoint
+CREATE INDEX "post_images_post_idx" ON "post_images" USING btree ("post_id");--> statement-breakpoint
 CREATE INDEX "post_likes_user_idx" ON "post_likes" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "post_saves_user_idx" ON "post_saves" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "post_tags_post_idx" ON "post_tags" USING btree ("post_id");--> statement-breakpoint

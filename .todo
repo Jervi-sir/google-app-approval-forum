@@ -23,17 +23,17 @@
 - add image feature
 - new post @done
 - generate a template that i used to use 
-- list saved 
-- edit profile 
+- list saved @done
+- edit profile @done
 - logout @done
-- change the / home to posts
+- change the / home to posts @done
 - 
 - 
-- admin side being protected
-- list posts
-- show post
-- edit post
-- list reports
-- crud tags
-- list users
-- approve users
+- admin side being protected @done
+- list posts @done
+- show post @done
+- edit post @done
+- list reports @done
+- crud tags @done
+- list users @done
+- approve users @done

@@ -119,28 +119,26 @@ export default function SavedPostsPage() {
     }
   }
 
-  if (loading) return null
-
-  if (!isAuthed || !authorId) {
-    return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Sign in required</CardTitle>
-            <CardDescription>Login to see your saved posts.</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <Button asChild>
-              <Link href="/login">Go to login</Link>
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
-    )
-  }
+  // if (!isAuthed && !loading) {
+  //   return (
+  //     <div className="mx-auto w-full max-w-3xl py-8">
+  //       <Card>
+  //         <CardHeader>
+  //           <CardTitle className="text-lg">Sign in required</CardTitle>
+  //           <CardDescription>Login to see your saved posts.</CardDescription>
+  //         </CardHeader>
+  //         <CardFooter>
+  //           <Button asChild>
+  //             <Link href="/login">Go to login</Link>
+  //           </Button>
+  //         </CardFooter>
+  //       </Card>
+  //     </div>
+  //   )
+  // }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">

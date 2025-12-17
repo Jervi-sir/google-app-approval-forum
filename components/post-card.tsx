@@ -9,7 +9,7 @@ import { Button } from './ui/button';
 export const PostCard = ({ post }: { post: FeedPost }) => {
   return (
     <>
-      <Card key={post.id} className="overflow-hidden">
+      <Card key={post.id} className="overflow-hidden pb-0">
         <CardHeader className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
@@ -33,15 +33,8 @@ export const PostCard = ({ post }: { post: FeedPost }) => {
                   </Link>
                 </span>
 
-                {post.author.isVerified && (
-                  <span className="inline-flex items-center gap-1 text-xs text-foreground">
-                    <ShieldCheck className="h-4 w-4" />
-                    Verified
-                  </span>
-                )}
-
                 <span className="text-xs text-muted-foreground">
-                  • {new Date(post.createdAt).toLocaleString()}
+                  {new Date(post.createdAt).toLocaleString()}
                 </span>
 
                 {post.moderationStatus === "needs_fix" && (
@@ -53,11 +46,7 @@ export const PostCard = ({ post }: { post: FeedPost }) => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" className="gap-2" disabled>
-                <Bookmark className="h-4 w-4" />
-                Save
-              </Button>
-              <Button size="sm" asChild>
+              <Button size="sm" variant={"secondary"} asChild>
                 <Link href={`/posts/show/${post.id}`}>Open</Link>
               </Button>
             </div>
@@ -72,22 +61,23 @@ export const PostCard = ({ post }: { post: FeedPost }) => {
           </div>
         </CardHeader>
 
-        <CardContent>
-          <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
-
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <CardContent className='space-y-4'>
+          <div className="grid gap-2 sm:grid-cols-2">
             <div className="rounded-md border p-3">
               <div className="text-xs text-muted-foreground">Play Store</div>
-              <div className="truncate text-sm font-medium">{post.playStoreUrl}</div>
+              <Link className="truncate text-sm font-medium" href={post.playStoreUrl} target='_blank'>{post.playStoreUrl}</Link>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-xs text-muted-foreground">Google Group</div>
-              <div className="truncate text-sm font-medium">{post.googleGroupUrl}</div>
+              <Link className="truncate text-sm font-medium" href={post.googleGroupUrl} target='_blank'>{post.googleGroupUrl}</Link>
             </div>
           </div>
+
+          <p className="text-sm leading-relaxed text-foreground/90">{post.content}</p>
+
         </CardContent>
 
-        <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20">
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/20 pb-6">
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Heart className="h-4 w-4" /> {post.counts.likes}

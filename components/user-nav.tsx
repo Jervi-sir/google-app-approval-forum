@@ -24,7 +24,7 @@ export function UserNav() {
 
   if (!isAuthed || !user) {
     return (
-      <Button asChild variant="default" size="sm">
+      <Button asChild variant="secondary" size="md">
         <Link href="/auth/signin">Login</Link>
       </Button>
     )
@@ -43,7 +43,7 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full bg-secondary hover:bg-primary">
           <Avatar className="h-8 w-8">
             <AvatarImage src={avatarUrl} alt={userName} />
             <AvatarFallback>{initials}</AvatarFallback>
@@ -76,8 +76,8 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           {/* Using a Link to the signout route for server-side cleanup */}
-          <Link href="/auth/signout" className="flex w-full cursor-pointer items-center text-red-600 focus:text-red-600">
-            <LogOut className="mr-2 h-4 w-4" />
+          <Link href="/auth/signout" className="flex w-full cursor-pointer items-center text-destructive focus:text-destructive">
+            <LogOut className="mr-2 h-4 w-4 text-destructive" />
             Log out
           </Link>
         </DropdownMenuItem>

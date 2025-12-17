@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import { desc, eq, inArray } from "drizzle-orm"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import { db } from "@/drizzle/db"
-import { postSaves, posts } from "@/drizzle/schema"
-
+import { comments, postLikes, postSaves, postTags, posts, profiles, tags } from "@/drizzle/schema"
 import { cookies } from "next/headers"
 import { createClient } from "@/utils/supabase/server"
 
@@ -20,14 +19,77 @@ export async function GET() {
     .limit(50)
 
   const ids = saved.map((s) => s.postId)
-  const postsRows = ids.length
-    ? await db
-      .select({ id: posts.id, title: posts.title, createdAt: posts.createdAt })
-      .from(posts)
-      .where(inArray(posts.id, ids))
-    : []
+  if (!ids.length) return NextResponse.json({ items: [] })
 
-  const byId = new Map(postsRows.map((p) => [p.id, p]))
+  const likesCount = sql<number>`(select count(*)::int from ${postLikes} pl where pl.post_id = ${posts.id})`
+  const savesCount = sql<number>`(select count(*)::int from ${postSaves} ps where ps.post_id = ${posts.id})`
+  const commentsCount = sql<number>`(
+    select count(*)::int from ${comments} c
+    where c.post_id = ${posts.id} and c.is_deleted = false
+  )`
+
+  const tagsAgg = sql<string[]>`
+    coalesce(
+      array_agg(distinct ${tags.name}) filter (where ${tags.name} is not null),
+      '{}'
+    )
+  `
+
+  const rows = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      content: posts.content,
+      playStoreUrl: posts.playStoreUrl,
+      googleGroupUrl: posts.googleGroupUrl,
+      createdAt: posts.createdAt,
+      moderationStatus: posts.moderationStatus,
+
+      authorId: profiles.id,
+      authorName: profiles.name,
+      authorAvatar: profiles.avatarUrl,
+      authorIsVerified: profiles.isVerified,
+
+      likes: likesCount,
+      saves: savesCount,
+      comments: commentsCount,
+
+      tags: tagsAgg,
+    })
+    .from(posts)
+    .innerJoin(profiles, eq(profiles.id, posts.authorId))
+    .leftJoin(postTags, eq(postTags.postId, posts.id))
+    .leftJoin(tags, eq(tags.id, postTags.tagId))
+    .where(inArray(posts.id, ids))
+    .groupBy(posts.id, profiles.id)
+
+  const byId = new Map(
+    rows.map((p) => [
+      p.id,
+      {
+        id: p.id,
+        title: p.title,
+        content: p.content,
+        playStoreUrl: p.playStoreUrl ?? "",
+        googleGroupUrl: p.googleGroupUrl ?? "",
+        createdAt: p.createdAt?.toISOString?.() ?? String(p.createdAt),
+        tags: p.tags ?? [],
+        moderationStatus: p.moderationStatus as any,
+        author: {
+          id: p.authorId,
+          name: p.authorName ?? "Unknown",
+          image: p.authorAvatar ?? undefined,
+          isVerified: !!p.authorIsVerified,
+        },
+        counts: {
+          likes: Number(p.likes ?? 0),
+          comments: Number(p.comments ?? 0),
+          saves: Number(p.saves ?? 0),
+        },
+      },
+    ]),
+  )
+
   return NextResponse.json({
     items: saved.map((s) => ({
       postId: s.postId,

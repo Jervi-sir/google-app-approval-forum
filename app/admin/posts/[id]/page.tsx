@@ -138,7 +138,7 @@ export default function AdminPostDetailPage() {
   const isHidden = post.moderationStatus === "hidden"
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-8">
+    <div className="mx-auto w-full max-w-3xl pb-8">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" >

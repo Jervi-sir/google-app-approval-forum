@@ -80,9 +80,8 @@ function StatusCard({
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <ShieldCheck className="h-4 w-4" />
         <span>{isVerified ? "Verified" : "Not verified"}</span>
-        <Badge variant="outline">{role}</Badge>
+        {/* <Badge variant="outline">{role}</Badge> */}
       </div>
-
       <Button variant="outline" size="sm" className="gap-2" onClick={onRefresh} disabled={refreshing}>
         {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
         Refresh
@@ -314,7 +313,7 @@ export default function VerifyPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading verification…
@@ -325,7 +324,7 @@ export default function VerifyPage() {
 
   if (err) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <Card className="border-destructive/40">
           <CardHeader className="pb-3">
             <CardTitle className="text-base text-destructive">Couldn’t load verification</CardTitle>
@@ -346,7 +345,7 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">

@@ -127,7 +127,7 @@ export default function PublicUserPage() {
 
   if (userLoading) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading profile…
@@ -138,7 +138,7 @@ export default function PublicUserPage() {
 
   if (!user) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-10 space-y-4">
+      <div className="mx-auto w-full max-w-3xl py-10 space-y-4">
         <Button asChild variant="ghost">
           <Link href="/posts">← Back</Link>
         </Button>
@@ -153,7 +153,7 @@ export default function PublicUserPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost">

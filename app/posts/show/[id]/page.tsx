@@ -183,7 +183,7 @@ export default function PostDetailPage() {
 
   if (loadingPost) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <Card>
           <CardContent className="py-10 flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -196,7 +196,7 @@ export default function PostDetailPage() {
 
   if (postError || !post) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Couldn’t load post</CardTitle>
@@ -214,7 +214,7 @@ export default function PostDetailPage() {
 
   if (post.moderationStatus === "hidden") {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 py-10">
+      <div className="mx-auto w-full max-w-3xl py-10">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">This content is unavailable</CardTitle>
@@ -233,7 +233,7 @@ export default function PostDetailPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-8">
+    <div className="mx-auto w-full max-w-3xl py-8">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>
@@ -251,39 +251,52 @@ export default function PostDetailPage() {
       </div>
 
       <div className="mt-4 space-y-4">
-        {/* Title + meta */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{post.title}</h1>
+        {/* Title + meta (CARD) */}
+        <Card>
+          <CardHeader className="space-y-2">
+            <CardTitle className="text-2xl font-semibold tracking-tight">
+              {post.title}
+            </CardTitle>
 
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Link href={`/users/${post.author.id}`} className="inline-flex items-center gap-2 hover:underline underline-offset-4">
-              <Avatar className="h-6 w-6">
-                <AvatarImage src={post.author.image ?? undefined} alt={post.author.name ?? "User"} />
-                <AvatarFallback>{initials(post.author.name)}</AvatarFallback>
-              </Avatar>
-              <span className="font-medium text-foreground">{post.author.name ?? "Unknown"}</span>
-            </Link>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+              <Link
+                href={`/users/${post.author.id}`}
+                className="inline-flex items-center gap-2 hover:underline underline-offset-4"
+              >
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={post.author.image ?? undefined} alt={post.author.name ?? "User"} />
+                  <AvatarFallback>{initials(post.author.name)}</AvatarFallback>
+                </Avatar>
+                <span className="font-medium text-foreground">{post.author.name ?? "Unknown"}</span>
+              </Link>
 
-            {post.author.isVerified && (
-              <span className="inline-flex items-center gap-1 text-xs text-foreground">
-                <ShieldCheck className="h-4 w-4" />
-                Verified
-              </span>
-            )}
+              {post.author.isVerified && (
+                <span className="inline-flex items-center gap-1 text-xs text-foreground">
+                  <ShieldCheck className="h-4 w-4" />
+                  Verified
+                </span>
+              )}
 
-            <span className="text-xs">• {formatTimeLabel(post.createdAt)}</span>
+              <span className="text-xs">• {formatTimeLabel(post.createdAt)}</span>
 
-            {post.moderationStatus === "needs_fix" && <Badge variant="destructive">Needs fix</Badge>}
-          </div>
+              {post.moderationStatus === "needs_fix" && (
+                <Badge variant="destructive">Needs fix</Badge>
+              )}
+            </div>
+          </CardHeader>
 
-          <div className="flex flex-wrap gap-2">
-            {post.tags.map((t) => (
-              <Badge key={t.id} variant="secondary">
-                {t.name}
-              </Badge>
-            ))}
-          </div>
-        </div>
+          {post.tags.length > 0 && (
+            <CardContent className="pt-0">
+              <div className="flex flex-wrap gap-2">
+                {post.tags.map((t) => (
+                  <Badge key={t.id} variant="secondary">
+                    {t.name}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          )}
+        </Card>
 
         {/* CTA cards */}
         <div className="grid gap-3 sm:grid-cols-2">
@@ -299,7 +312,7 @@ export default function PostDetailPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button asChild className="w-full gap-2" disabled={!post.googleGroupUrl}>
+              <Button asChild className="w-full gap-2" variant={"secondary"} disabled={!post.googleGroupUrl}>
                 <a href={post.googleGroupUrl ?? "#"} target="_blank" rel="noreferrer">
                   Open group <ExternalLink className="h-4 w-4" />
                 </a>

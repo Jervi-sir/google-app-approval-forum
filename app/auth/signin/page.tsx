@@ -45,7 +45,7 @@ function SignInContent() {
           </div>
         </div>
 
-        <Button className="w-full gap-2" onClick={handleLogin}>
+        <Button className="w-full gap-2" variant={"secondary"} onClick={handleLogin}>
           <Chrome className="h-4 w-4" />
           Continue with Google
         </Button>
@@ -63,15 +63,6 @@ function SignInContent() {
           </Link>
         </div>
       </CardContent>
-
-      <CardFooter className="flex items-center justify-between">
-        <Button variant="ghost" asChild>
-          <Link href="/">Home</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/posts">Browse</Link>
-        </Button>
-      </CardFooter>
     </Card>
   )
 }
