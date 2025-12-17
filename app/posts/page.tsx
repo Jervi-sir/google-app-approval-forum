@@ -198,7 +198,7 @@ export default async function PostsPage({
 
         <div className="flex items-center gap-2">
           <Button asChild variant="secondary">
-            <Link href="/posts/upsert">New post</Link>
+            <Link href="/posts/upsert" className="whitespace-nowrap">New post</Link>
           </Button>
 
           <Button variant="outline" asChild>
