@@ -26,6 +26,8 @@ type PostApi = {
     content: string
     playStoreUrl: string | null
     googleGroupUrl: string | null
+    templateName?: string | null
+    templateCode?: string | null
     moderationStatus?: "ok" | "needs_fix" | "hidden"
     createdAt: string
     updatedAt: string
@@ -233,7 +235,7 @@ export default function PostDetailPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>
@@ -283,6 +285,14 @@ export default function PostDetailPage() {
                 <Badge variant="destructive">Needs fix</Badge>
               )}
             </div>
+
+            {/* Template Info (if present) */}
+            {(post.templateName || post.templateCode) && (
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                {post.templateName && <Badge variant="outline" className="text-muted-foreground">{post.templateName}</Badge>}
+                {post.templateCode && <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded text-muted-foreground">{post.templateCode}</span>}
+              </div>
+            )}
           </CardHeader>
 
           {post.tags.length > 0 && (
@@ -298,6 +308,19 @@ export default function PostDetailPage() {
           )}
         </Card>
 
+        {/* Actions */}
+        <PostActions
+          likedByMe={post.viewer.likedByMe}
+          savedByMe={post.viewer.savedByMe}
+          likesCount={post.counts.likes}
+          savesCount={post.counts.saves}
+          commentsCount={post.counts.comments}
+          onToggleLike={onToggleLike}
+          onToggleSave={onToggleSave}
+          likeBusy={likeBusy}
+          saveBusy={saveBusy}
+          postId={post.id}
+        />
         {/* CTA cards */}
         <div className="grid gap-3 sm:grid-cols-2">
           <Card>
@@ -341,6 +364,28 @@ export default function PostDetailPage() {
           </Card>
         </div>
 
+        {/* Images */}
+        {post.images.length > 0 && (
+          <Card className="gap-1">
+            <CardHeader className="pb-0">
+              <CardTitle className="text-base">App Preview</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {post.images.map(img => (
+                <Card key={img.id} className="overflow-hidden">
+                  <div className="aspect-video w-full relative bg-muted">
+                    <img
+                      src={img.url}
+                      alt="Post screenshot"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                </Card>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Body */}
         <Card>
           <CardHeader >
@@ -351,18 +396,6 @@ export default function PostDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Actions */}
-        <PostActions
-          likedByMe={post.viewer.likedByMe}
-          savedByMe={post.viewer.savedByMe}
-          likesCount={post.counts.likes}
-          savesCount={post.counts.saves}
-          commentsCount={post.counts.comments}
-          onToggleLike={onToggleLike}
-          onToggleSave={onToggleSave}
-          likeBusy={likeBusy}
-          saveBusy={saveBusy}
-        />
 
         {postError && (
           <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">

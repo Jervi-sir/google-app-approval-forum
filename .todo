@@ -1,12 +1,12 @@
 - authentication with google @done
 - logout @done
-- posts
+- posts @done
   - ui @done
   - api @done
-  - pagiation
-  - filter
+  - pagiation @done
+  - filter @done
   - search @done
-  - sort
+  - sort @done
 
 - make the posts to components @done
 - show the post @done
@@ -14,15 +14,15 @@
 - comment in the post @done
 - edit comment @done
 - delete comment @done
-- paginate comment
+- paginate comment @done
 - like @done
 - save @done
-- share
+- share @done
 - edit post @done
 - delete post @done
-- add image feature
+- add image feature @done
 - new post @done
-- generate a template that i used to use 
+- generate a template that i used to use @done
 - list saved @done
 - edit profile @done
 - logout @done

@@ -180,7 +180,7 @@ export default async function PostsPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl py-8">
+    <main className="mx-auto w-full max-w-3xl py-8 px-4 ">
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger

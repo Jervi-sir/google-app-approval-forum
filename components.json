@@ -21,6 +21,7 @@
   "registries": {
     "@8bitcn": "https://8bitcn.com/r/{name}.json",
     "@optics": "https://optics.agusmayol.com.ar/r/{name}.json",
-    "@retroui": "https://retroui.dev/r/{name}.json"
+    "@retroui": "https://retroui.dev/r/{name}.json",
+    "@shadcn-editor": "https://shadcn-editor.vercel.app/r/{name}.json"
   }
 }

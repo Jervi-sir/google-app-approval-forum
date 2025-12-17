@@ -204,12 +204,17 @@ export function CommentsSection({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-end justify-between">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Comments</h2>
-          <p className="text-sm text-muted-foreground">Be respectful. Report anything suspicious.</p>
+          <p className="text-sm text-muted-foreground">
+            Be respectful. Report anything suspicious.
+          </p>
         </div>
-        <div className="text-xs text-muted-foreground">{totalComments} total</div>
+        <div className="text-xs text-muted-foreground sm:text-right">
+          {totalComments} total
+        </div>
       </div>
 
       {/* Add comment */}
@@ -224,9 +229,16 @@ export function CommentsSection({
             placeholder="Write your comment…"
             className="min-h-[110px]"
           />
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">Tip: include your device model + Android version for better feedback.</p>
-            <Button onClick={onAddComment} disabled={postingComment || newComment.trim().length === 0}>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Tip: include your device model + Android version for better feedback.
+            </p>
+            <Button
+              onClick={onAddComment}
+              className="w-full sm:w-auto"
+              disabled={postingComment || newComment.trim().length === 0}
+            >
               {postingComment ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting…
@@ -251,7 +263,7 @@ export function CommentsSection({
       <div className="space-y-3">
         {loading && comments.length === 0 ? (
           <Card>
-            <CardContent className="py-10 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <CardContent className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading comments…
             </CardContent>
@@ -268,17 +280,25 @@ export function CommentsSection({
 
             return (
               <Card key={c.id}>
-                <CardContent>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarImage src={c.author.image ?? undefined} alt={c.author.name ?? "User"} />
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    {/* Left: avatar + content */}
+                    <div className="flex gap-3">
+                      <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage
+                          src={c.author.image ?? undefined}
+                          alt={c.author.name ?? "User"}
+                        />
                         <AvatarFallback>{initials(c.author.name)}</AvatarFallback>
                       </Avatar>
 
-                      <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/users/${c.author.id}`} className="font-medium hover:underline underline-offset-4">
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <Link
+                            href={`/users/${c.author.id}`}
+                            className="max-w-[22ch] truncate font-medium hover:underline underline-offset-4 sm:max-w-none"
+                            title={c.author.name ?? "Unknown"}
+                          >
                             {c.author.name ?? "Unknown"}
                           </Link>
 
@@ -289,7 +309,9 @@ export function CommentsSection({
                             </span>
                           )}
 
-                          <span className="text-xs text-muted-foreground">• {formatTimeLabel(c.createdAt)}</span>
+                          <span className="text-xs text-muted-foreground">
+                            • {formatTimeLabel(c.createdAt)}
+                          </span>
                         </div>
 
                         {isEditing ? (
@@ -299,9 +321,10 @@ export function CommentsSection({
                               onChange={(e) => setEditingText(e.target.value)}
                               className="min-h-[90px]"
                             />
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                               <Button
                                 size="sm"
+                                className="w-full sm:w-auto"
                                 onClick={() => saveEdit(c.id)}
                                 disabled={editBusy || editingText.trim().length === 0}
                               >
@@ -313,23 +336,38 @@ export function CommentsSection({
                                   "Save"
                                 )}
                               </Button>
-                              <Button size="sm" variant="outline" onClick={cancelEdit} disabled={editBusy}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-full sm:w-auto"
+                                onClick={cancelEdit}
+                                disabled={editBusy}
+                              >
                                 Cancel
                               </Button>
                             </div>
                           </div>
                         ) : (
-                          <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90">{c.content}</p>
+                          <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground/90">
+                            {c.content}
+                          </p>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1">
+                    {/* Right: actions */}
+                    <div className="flex flex-wrap items-center justify-end gap-1 sm:justify-start">
                       {mine && !isEditing && (
                         <>
-                          <Button variant="ghost" size="sm" className="gap-2" onClick={() => startEdit(c)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => startEdit(c)}
+                          >
                             <Pencil className="h-4 w-4" />
-                            Edit
+                            <span className="hidden sm:inline">Edit</span>
+                            <span className="sm:hidden">Edit</span>
                           </Button>
                           <Button
                             variant="ghost"
@@ -338,8 +376,13 @@ export function CommentsSection({
                             onClick={() => deleteComment(c.id)}
                             disabled={deleting}
                           >
-                            {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                            Delete
+                            {deleting ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                            <span className="hidden sm:inline">Delete</span>
+                            <span className="sm:hidden">Delete</span>
                           </Button>
                         </>
                       )}
@@ -354,46 +397,50 @@ export function CommentsSection({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between gap-2 pt-2">
+      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <Button
           variant="outline"
+          className="w-full sm:w-auto"
           disabled={loading || page <= 1}
           onClick={() => fetchComments(page - 1, "replace")}
         >
           Previous
         </Button>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="text-center text-xs text-muted-foreground sm:text-left">
           Page {page}
           {totalComments ? ` • ${totalComments} total` : ""}
         </div>
 
-        <Button
-          variant="outline"
-          disabled={loading || !hasMore}
-          onClick={() => fetchComments(page + 1, "replace")}
-        >
-          Next
-        </Button>
-      </div>
-
-      {/* Load more (optional) */}
-      {hasMore && (
-        <Button
-          variant="secondary"
-          className="w-full"
-          disabled={loading}
-          onClick={() => fetchComments(page + 1, "append")}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
-            </>
-          ) : (
-            "Load more"
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+          {hasMore && (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto text-center flex justify-center"
+              disabled={loading}
+              onClick={() => fetchComments(page + 1, "append")}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                </>
+              ) : (
+                "Load more"
+              )}
+            </Button>
           )}
-        </Button>
-      )}
+
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto"
+            disabled={loading || !hasMore}
+            onClick={() => fetchComments(page + 1, "replace")}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
     </div>
   )
+
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Plus, Save, Loader2, Info } from "lucide-react"
 import { useRouter } from "next/navigation"
 
@@ -13,11 +13,16 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
+// import { Select } from "@/components/ui/select" 
 import { useAuthUser } from "@/utils/hooks/use-auth-user"
 
 import { ScreenshotsManager, type ImageItem } from "./form-components/screenshots-manager"
 import { TagsManager } from "./form-components/tags-manager"
 import { DeleteSection } from "./form-components/delete-section"
+
+import { TemplateSelector } from "./form-components/template-selector"
+import { PostPreview } from "./form-components/post-preview"
 
 export type PostData = {
   id?: string
@@ -26,6 +31,8 @@ export type PostData = {
   playStoreUrl?: string
   googleGroupUrl?: string
   tags: string[]
+  templateName?: string
+  templateCode?: string
   images?: string[] // URLs
   moderationStatus?: "ok" | "needs_fix" | "hidden"
   moderationNote?: string
@@ -58,6 +65,8 @@ export function Content({ post }: PostFormProps) {
   const [content, setContent] = useState(post?.content ?? "")
   const [googleGroupUrl, setGoogleGroupUrl] = useState(post?.googleGroupUrl ?? "")
   const [playStoreUrl, setPlayStoreUrl] = useState(post?.playStoreUrl ?? "")
+  const [templateName, setTemplateName] = useState(post?.templateName ?? "")
+  const [templateCode, setTemplateCode] = useState(post?.templateCode ?? "")
 
   const [selectedTags, setSelectedTags] = useState<string[]>(post?.tags ?? [])
 
@@ -65,6 +74,8 @@ export function Content({ post }: PostFormProps) {
     if (!post?.images?.length) return []
     return post.images.slice(0, 2).map((url) => ({ id: crypto.randomUUID(), url }))
   })
+
+
 
   // We kept MAX_IMAGES constant here if needed for validation pre-submit,
   // but better to let ScreenshotsManager enforce UI. Pre-submit check is still good safety.
@@ -128,6 +139,8 @@ export function Content({ post }: PostFormProps) {
         content: content.trim(),
         googleGroupUrl: googleGroupUrl.trim() || "",
         playStoreUrl: playStoreUrl.trim() || "",
+        templateName: templateName.trim() || null,
+        templateCode: templateCode.trim() || null,
         tags: selectedTags,
         images: finalImageUrls,
       }
@@ -158,7 +171,7 @@ export function Content({ post }: PostFormProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>
@@ -286,10 +299,20 @@ export function Content({ post }: PostFormProps) {
             </div>
 
             {/* Images */}
-            {/* <ScreenshotsManager images={images} setImages={setImages} maxImages={MAX_IMAGES} /> */}
+            <ScreenshotsManager images={images} setImages={setImages} maxImages={MAX_IMAGES} />
 
             {/* Tags */}
             <TagsManager selectedTags={selectedTags} setSelectedTags={setSelectedTags} />
+
+            {/* Template Info */}
+            <TemplateSelector
+              templateName={templateName}
+              setTemplateName={setTemplateName}
+              templateCode={templateCode}
+              setTemplateCode={setTemplateCode}
+              setContent={setContent}
+            />
+
           </CardContent>
 
           <CardFooter className="flex flex-col gap-3 border-t bg-muted/20 sm:flex-row sm:items-center sm:justify-between">
@@ -312,42 +335,12 @@ export function Content({ post }: PostFormProps) {
 
         {/* Preview card (create mode) */}
         {!isEditing && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="rounded-md border p-4">
-                <div className="text-xs text-muted-foreground">How it will look in the feed</div>
-
-                <div className="mt-2 text-base font-semibold">{title.trim() || "Your title here..."}</div>
-
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {content.trim() ? content.trim().slice(0, 140) + (content.trim().length > 140 ? "…" : "") : "Your description here..."}
-                </div>
-
-                <div className="mt-3 space-y-3">
-                  {images.length > 0 ? (
-                    <div className="relative h-48 w-full overflow-hidden rounded-md bg-muted">
-                      <img src={images[0].url} alt="Preview" className="h-full w-full object-cover" />
-                    </div>
-                  ) : (
-                    <div className="h-20 w-full rounded-md border border-dashed bg-muted/20 flex items-center justify-center text-xs text-muted-foreground">
-                      No image
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-2">
-                    {(selectedTags.length ? selectedTags : ["Finance", "Tools"]).slice(0, 5).map((t) => (
-                      <Badge key={t} variant="secondary">
-                        {t}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <PostPreview
+            title={title}
+            content={content}
+            images={images}
+            selectedTags={selectedTags}
+          />
         )}
 
         {/* Danger Zone (edit mode) */}
@@ -358,3 +351,5 @@ export function Content({ post }: PostFormProps) {
     </div>
   )
 }
+
+

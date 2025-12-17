@@ -13,6 +13,8 @@ const CreatePostSchema = z.object({
   googleGroupUrl: z.string().url().optional().or(z.literal("")).transform(v => v || undefined),
   tags: z.array(z.string().min(1)).max(8).default([]),
   images: z.array(z.string().url()).max(2).default([]),
+  templateName: z.string().optional().nullable(),
+  templateCode: z.string().optional().nullable(),
 
   // If you’re using Supabase Auth, you should NOT accept authorId from client.
   // For now (MVP), allow passing authorId explicitly:
@@ -52,6 +54,8 @@ export async function POST(req: Request) {
           content: input.content,
           playStoreUrl: input.playStoreUrl,
           googleGroupUrl: input.googleGroupUrl,
+          templateName: input.templateName ?? null,
+          templateCode: input.templateCode ?? null,
         })
         .returning({ id: posts.id })
 

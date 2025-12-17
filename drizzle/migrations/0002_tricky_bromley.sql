@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ALTER COLUMN "template_name" DROP NOT NULL;

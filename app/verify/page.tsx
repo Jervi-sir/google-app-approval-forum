@@ -345,7 +345,7 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">

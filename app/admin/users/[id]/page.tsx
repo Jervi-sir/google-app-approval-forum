@@ -174,7 +174,7 @@ export default function AdminUserDetailPage() {
   const initials = (user.name ?? "U").slice(0, 2).toUpperCase()
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost" onClick={() => window.history.back()}>

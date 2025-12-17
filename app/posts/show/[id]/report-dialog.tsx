@@ -24,7 +24,7 @@ export function ReportDialog({ targetLabel }: { targetLabel: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
+        <Button variant="ghost" size="md" className="gap-2">
           <Flag className="h-4 w-4" />
           Report
         </Button>

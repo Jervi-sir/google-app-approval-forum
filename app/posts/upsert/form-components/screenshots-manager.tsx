@@ -25,13 +25,13 @@ export function ScreenshotsManager({
   images,
   setImages,
   maxImages = 2,
-  maxBytes = 5 * 1024,
+  maxBytes = 40 * 1024,
 }: ScreenshotsManagerProps) {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const compressToMaxBytes = async (file: File, maxBytes: number) => {
-    let maxDim = 240
-    let quality = 0.2
+    let maxDim = 320
+    let quality = 0.7
     let current: File = file
 
     for (let i = 0; i < 8; i++) {
@@ -103,46 +103,47 @@ export function ScreenshotsManager({
           <AlertDescription>{errorMsg}</AlertDescription>
         </Alert>
       )}
+      <div className="rounded-md border p-3 space-y-2">
+        <div className="flex flex-wrap gap-4">
+          {images.map((img) => (
+            <div key={img.id} className="relative h-32 w-24 overflow-hidden rounded-md border bg-muted group">
+              <img src={img.url} alt="preview" className="h-full w-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeImage(img.id)}
+                className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 hover:bg-black/80 group-hover:opacity-100 transition-opacity"
+                aria-label="Remove image"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
 
-      <div className="flex flex-wrap gap-4">
-        {images.map((img) => (
-          <div key={img.id} className="relative h-32 w-24 overflow-hidden rounded-md border bg-muted group">
-            <img src={img.url} alt="preview" className="h-full w-full object-cover" />
-            <button
-              type="button"
-              onClick={() => removeImage(img.id)}
-              className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white opacity-0 hover:bg-black/80 group-hover:opacity-100 transition-opacity"
-              aria-label="Remove image"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        ))}
+          {canAddMoreImages && (
+            <div className="h-32 w-24">
+              <input
+                type="file"
+                id="image-upload"
+                className="hidden"
+                accept="image/*"
+                multiple
+                onChange={handleImageSelect}
+              />
+              <label
+                htmlFor="image-upload"
+                className="flex h-full w-full cursor-pointer flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 hover:bg-muted/40 transition-colors"
+              >
+                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                <span className="mt-2 text-xs text-muted-foreground">Add Image</span>
+              </label>
+            </div>
+          )}
+        </div>
 
-        {canAddMoreImages && (
-          <div className="h-32 w-24">
-            <input
-              type="file"
-              id="image-upload"
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleImageSelect}
-            />
-            <label
-              htmlFor="image-upload"
-              className="flex h-full w-full cursor-pointer flex-col items-center justify-center rounded-md border border-dashed bg-muted/20 hover:bg-muted/40 transition-colors"
-            >
-              <ImageIcon className="h-6 w-6 text-muted-foreground" />
-              <span className="mt-2 text-xs text-muted-foreground">Add Image</span>
-            </label>
-          </div>
-        )}
+        <p className="text-xs text-muted-foreground">
+          Images are compressed to WebP (target max {Math.round(maxBytes / 1024)}KB each). If upload fails, reduce image complexity.
+        </p>
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Images are compressed to WebP (target max {Math.round(maxBytes / 1024)}KB each). If upload fails, reduce image complexity.
-      </p>
     </div>
   )
 }

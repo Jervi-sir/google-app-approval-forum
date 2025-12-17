@@ -67,6 +67,8 @@ export const posts = pgTable(
     googleGroupUrl: text("google_group_url"),
 
     moderationStatus: moderationStatusEnum("moderation_status").notNull().default("ok"),
+    templateName: varchar("template_name", { length: 64 }),
+    templateCode: varchar("template_code", { length: 32 }),
 
     isDeleted: boolean("is_deleted").notNull().default(false),
     deletedAt: timestamp("deleted_at", { withTimezone: true }),

@@ -8,6 +8,24 @@ import { UuidSchema } from "../../_schema"
 import { createClient } from "@/utils/supabase/server"
 import { cookies } from "next/headers"
 
+
+async function deleteImageUrls(urls: string[], supabase: any) {
+  if (!urls.length) return
+  // Extract path from public URL
+  // URL Format: .../storage/v1/object/public/google_play/folder/filename.ext
+  // Path: folder/filename.ext
+  const paths = urls.map(u => {
+    try {
+      const match = u.match(/google_play\/(.+)$/)
+      return match ? match[1] : null
+    } catch { return null }
+  }).filter(Boolean) as string[]
+
+  if (paths.length) {
+    await supabase.storage.from("google_play").remove(paths)
+  }
+}
+
 const UpdatePostSchema = z.object({
   title: z.string().min(1).max(160).optional(),
   content: z.string().min(1).optional(),
@@ -15,6 +33,8 @@ const UpdatePostSchema = z.object({
   googleGroupUrl: z.string().url().optional().or(z.literal("")).transform(v => v || undefined),
   tags: z.array(z.string().min(1)).max(8).optional(),
   images: z.array(z.string().url()).max(2).optional(),
+  templateName: z.string().optional().nullable(),
+  templateCode: z.string().optional().nullable(),
 
   // MVP auth check: require authorId to verify ownership.
   // In a real setup, read user id from Supabase session instead.
@@ -57,6 +77,8 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
       if (input.content !== undefined) patch.content = input.content
       if (body.playStoreUrl !== undefined) patch.playStoreUrl = input.playStoreUrl
       if (body.googleGroupUrl !== undefined) patch.googleGroupUrl = input.googleGroupUrl
+      if (body.templateName !== undefined) patch.templateName = input.templateName ?? null
+      if (body.templateCode !== undefined) patch.templateCode = input.templateCode ?? null
 
       if (Object.keys(patch).length) {
         patch.updatedAt = new Date()
@@ -95,6 +117,18 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
 
       // 3) replace images if provided
       if (input.images) {
+        // Fetch OLD images first
+        const oldImages = await tx
+          .select({ url: postImages.url })
+          .from(postImages)
+          .where(eq(postImages.postId, postId))
+
+        const oldUrls = new Set(oldImages.map(r => r.url))
+        const newUrls = new Set(input.images)
+
+        // Identify removed URLs
+        const toDelete = oldImages.filter(r => !newUrls.has(r.url)).map(r => r.url)
+
         await tx.delete(postImages).where(eq(postImages.postId, postId))
         if (input.images.length) {
           await tx.insert(postImages).values(
@@ -104,6 +138,17 @@ export async function PUT(req: Request, ctx: { params: Promise<{ id: string }> }
               position: idx,
             }))
           )
+        }
+
+        // Perform storage deletion (after DB ops, or parallel)
+        // Note: Using `createClient` here which uses cookies (user session). 
+        // User should own the file so it should work.
+        if (toDelete.length > 0) {
+          const cookieStore = await cookies()
+          const supabase = createClient(cookieStore)
+          // We do this asynchronously without awaiting to not block response? 
+          // Better to await to ensure cleanup.
+          await deleteImageUrls(toDelete, supabase)
         }
       }
     })
@@ -139,6 +184,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
         createdAt: posts.createdAt,
         updatedAt: posts.updatedAt,
         moderationStatus: posts.moderationStatus,
+        templateName: posts.templateName,
+        templateCode: posts.templateCode,
         author: {
           id: profiles.id,
           name: profiles.name,

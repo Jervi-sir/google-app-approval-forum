@@ -1,0 +1,1 @@
+ALTER TABLE "posts" ADD COLUMN "template_name" varchar(64) DEFAULT NULL;

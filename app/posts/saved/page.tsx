@@ -121,7 +121,7 @@ export default function SavedPostsPage() {
 
   // if (!isAuthed && !loading) {
   //   return (
-  //     <div className="mx-auto w-full max-w-3xl py-8">
+  //     <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
   //       <Card>
   //         <CardHeader>
   //           <CardTitle className="text-lg">Sign in required</CardTitle>
@@ -138,7 +138,7 @@ export default function SavedPostsPage() {
   // }
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">

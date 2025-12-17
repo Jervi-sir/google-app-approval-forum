@@ -153,7 +153,7 @@ export default function PublicUserPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl py-8">
+    <div className="mx-auto w-full max-w-3xl py-8 px-4 ">
       {/* Top nav */}
       <div className="flex items-center justify-between gap-3">
         <Button asChild variant="ghost">

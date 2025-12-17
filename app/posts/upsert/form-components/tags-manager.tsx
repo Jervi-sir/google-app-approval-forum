@@ -170,7 +170,7 @@ export function TagsManager({ selectedTags, setSelectedTags }: TagsManagerProps)
 
       {/* Search + API suggestions + Create */}
       <div className="rounded-md border p-3 space-y-3">
-        <div className="text-xs text-muted-foreground">Find or create tags</div>
+        <p className="text-xs text-muted-foreground">Keep tags relevant (1–5). Helps users find your post.</p>
 
         <Input
           value={tagQuery}
@@ -221,12 +221,8 @@ export function TagsManager({ selectedTags, setSelectedTags }: TagsManagerProps)
             )}
           </div>
         )}
-      </div>
-
-      {/* Local suggested */}
-      <div className="rounded-md border p-3">
-        <div className="text-xs text-muted-foreground">Suggested</div>
-        <div className="mt-2 flex flex-wrap gap-2">
+        <div className="flex  items-center space-x-2 ">
+          <div className="text-xs text-muted-foreground">Suggested</div>
           {SUGGESTED_TAGS.map((t) => (
             <Button
               key={t}
@@ -241,9 +237,9 @@ export function TagsManager({ selectedTags, setSelectedTags }: TagsManagerProps)
             </Button>
           ))}
         </div>
+
       </div>
 
-      <p className="text-xs text-muted-foreground">Keep tags relevant (1–5). Helps users find your post.</p>
     </div>
   )
 }
