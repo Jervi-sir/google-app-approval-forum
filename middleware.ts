@@ -5,15 +5,9 @@ import { createClient } from "@/utils/supabase/middleware"
 export async function middleware(req: NextRequest) {
   const { supabase, response } = createClient(req)
 
-  // 1. Get User
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const path = req.nextUrl.pathname
 
-  // 2. Define Protected Routes
-  // These are routes that strictly require a logged-in user
+  // 1. Define Protected Routes
   const protectedPrefixes = [
     "/admin",
     "/profile",
@@ -25,13 +19,23 @@ export async function middleware(req: NextRequest) {
     path.startsWith(prefix)
   )
 
-  // 3. Redirect if accessing a protected route without a user
-  if (isProtectedRoute && !user) {
-    const url = req.nextUrl.clone()
-    url.pathname = "/auth/signin"
-    // Keep the original URL to redirect back after login
-    url.searchParams.set("redirect", path)
-    return NextResponse.redirect(url)
+  // 2. Performance Optimization: 
+  // Only call getUser if it's a protected route OR if there's an existing session cookie to refresh.
+  // This avoids a slow network call to Supabase for guest users on public pages.
+  const hasSessionCookie = req.cookies.getAll().some(c => c.name.startsWith('sb-'))
+
+  if (isProtectedRoute || hasSessionCookie) {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    // 3. Redirect if accessing a protected route without a user
+    if (isProtectedRoute && !user) {
+      const url = req.nextUrl.clone()
+      url.pathname = "/auth/signin"
+      url.searchParams.set("redirect", path)
+      return NextResponse.redirect(url)
+    }
   }
 
   return response
@@ -39,7 +43,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Apply to everything except static files and images
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Apply to everything except API, static files, and images
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 }
