@@ -2,41 +2,84 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-export function createClient(request: NextRequest) {
+export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
     request: {
-      headers: request.headers, // IMPORTANT
+      headers: request.headers,
     },
   })
 
-  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          )
+        },
       },
-      setAll(cookiesToSet) {
-        // set on the request (so subsequent reads in this middleware see latest cookies)
-        for (const { name, value } of cookiesToSet) {
-          request.cookies.set(name, value)
-        }
+    }
+  )
 
-        // recreate response with headers (IMPORTANT)
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        })
+  // 1. Define Protected Routes
+  const path = request.nextUrl.pathname
+  const protectedPrefixes = [
+    "/admin",
+    "/profile",
+    "/posts/upsert",
+    "/posts/saved"
+  ]
 
-        // set cookies on response
-        for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options)
-        }
-      },
-    },
-  })
+  const isProtectedRoute = protectedPrefixes.some((prefix) =>
+    path.startsWith(prefix)
+  )
 
-  return { supabase, response }
+  // 2. Performance Optimization: 
+  // Only call getUser if it's a protected route OR if there's an existing session cookie to refresh.
+  const hasSessionCookie = request.cookies.getAll().some(c => c.name.startsWith('sb-'))
+
+  if (isProtectedRoute || hasSessionCookie) {
+    // SECURITY: Use getUser() for protected routes. 
+    // For others, getSession() is faster and still triggers refresh if needed.
+
+    // Safeguard: Wrap the auth call in a timeout to prevent the whole middleware from timing out.
+    // If it takes > 2s, we fall back to null user and proceed.
+    const authPromise = isProtectedRoute
+      ? supabase.auth.getUser()
+      : supabase.auth.getSession();
+
+    const timeoutPromise = new Promise((resolve) =>
+      setTimeout(() => resolve({ data: { user: null, session: null }, error: new Error('Auth Timeout') }), 2000)
+    );
+
+    const result = await Promise.race([authPromise, timeoutPromise]) as {
+      data: { user?: any; session?: { user: any } };
+      error?: any;
+    };
+    const user = isProtectedRoute ? result.data?.user : result.data?.session?.user;
+
+
+    // 3. Redirect if accessing a protected route without a user
+    if (isProtectedRoute && !user) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/auth/signin"
+      url.searchParams.set("redirect", path)
+      return NextResponse.redirect(url)
+    }
+  }
+
+
+  return response
 }
+
